@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Website Name · Designer</title>
+<link id="dynamic-favicon" rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='2' y='2' width='60' height='60' rx='14' fill='%232563eb'/%3E%3C/svg%3E">
 <style>
   :root{
     --bg:#f6f8fc; --surface:#ffffff; --text:#0f172a; --muted:#64748b; --line:#e5e7eb;
@@ -120,7 +121,7 @@
   .preview-form .label-editable[contenteditable="true"]{outline:none;border-radius:6px;padding:2px 4px}
   .preview-form .label-editable[contenteditable="true"]:focus{box-shadow:0 0 0 2px #bfdbfe;background:#eff6ff}
   .preview-form input,.preview-form select,.preview-form textarea{width:100%;height:var(--ctrl-h);padding:10px 12px;border-radius:var(--ctrl-r);border:1px solid var(--line);background:#fff;color:#0f172a}
-  .preview-form textarea{height:auto;min-height:112px}
+  .preview-form textarea{min-height:112px}
 
   /* Divider card */
   .divider-card{position:relative;background:#fff;border:1px dashed #d1d5db;border-radius:12px;padding:8px}
@@ -314,12 +315,9 @@
 
     <main class="content">
       <section class="card" id="designerCard">
-        <!-- Feature name inline editable -->
         <header id="pageHeader" contenteditable="true" title="Click to rename feature">FORM_NAME</header>
-
         <div class="sep"></div>
         <div id="formHost"></div>
-
         <div id="formActions" class="inline" style="margin-top:12px;gap:10px">
           <button id="formSubmit" class="btn primary" type="button">Submit</button>
           <button id="formReset" class="btn ghost" type="button">Reset</button>
@@ -405,23 +403,30 @@ const uid=()=>Math.random().toString(36).slice(2,10);
 function toast(msg){ const t=$('#appToast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1800); }
 function clamp(n,a,b){ return Math.max(a, Math.min(b, n)); }
 
-/* ================= SITE NAME + LOGO ================= */
+/* ================= SITE NAME + LOGO + FAVICON ================= */
 const siteNameEl=$('#siteName'), logoBox=$('#logoBox');
 function getInitials(name){ return (name||'').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase() || 'WN'; }
 function svgAutoInitials(name){
   const initials=getInitials(name);
   return `
-    <svg viewBox="0 0 64 64" aria-hidden="true">
+    <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <defs><linearGradient id="g" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#2563eb"/><stop offset="1" stop-color="#7c3aed"/></linearGradient></defs>
       <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#g)"/>
       <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" font-size="26" font-weight="800" fill="#fff" font-family="ui-sans-serif,system-ui,Segoe UI,Roboto">${initials}</text>
     </svg>`;
 }
-function renderAutoInitials(){ logoBox.innerHTML = svgAutoInitials(siteNameEl.textContent.trim()); }
+function renderAutoInitials(){ logoBox.innerHTML = svgAutoInitials(siteNameEl.textContent.trim()); updateFaviconFromLogo(); }
 function saveBrand(){ localStorage.setItem('site_name', siteNameEl.textContent.trim()); localStorage.setItem('site_logo_html', logoBox.innerHTML); document.title = siteNameEl.textContent.trim()+' · Designer'; }
 function loadBrand(){
   const n=localStorage.getItem('site_name'); if(n){ siteNameEl.textContent=n; document.title=n+' · Designer'; }
   const h=localStorage.getItem('site_logo_html'); if(h){ logoBox.innerHTML=h; } else { renderAutoInitials(); }
+  updateFaviconFromLogo();
+}
+function updateFaviconFromLogo(){
+  const svg = logoBox.innerHTML || svgAutoInitials(siteNameEl.textContent.trim());
+  const encoded = 'data:image/svg+xml,' + encodeURIComponent(svg.replace(/\n+/g,''));
+  const link = document.getElementById('dynamic-favicon');
+  link.setAttribute('href', encoded);
 }
 siteNameEl.addEventListener('input', ()=>{ if(demoMode) return; renderAutoInitials(); saveBrand(); });
 siteNameEl.addEventListener('blur', ()=>{ if(demoMode) return; saveBrand(); });
@@ -430,18 +435,18 @@ siteNameEl.addEventListener('blur', ()=>{ if(demoMode) return; saveBrand(); });
 const logoPicker=$('#logoPicker'), lpGrid=$('#lpGrid'), lpClose=$('#lpClose'), lpAuto=$('#lpAuto'), lpReset=$('#lpReset'), lpBig=$('#lpBig'), lpSearch=$('#lpSearch'), lpUse=$('#lpUse');
 let lpSelectedIndex=0;
 const GENERIC_LOGOS = [
-  `<svg viewBox="0 0 64 64"><defs><linearGradient id="g1" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#2563eb"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><rect rx="14" x="4" y="4" width="56" height="56" fill="#0ea5e9" opacity=".08"/><path d="M8 40 Q22 18 34 28 T56 28 L56 56 H8 Z" fill="url(#g1)"/></svg>`,
-  `<svg viewBox="0 0 64 64"><defs><linearGradient id="g2" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#7c3aed"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#7c3aed" opacity=".06"/><g fill="url(#g2)"><circle cx="16" cy="32" r="6"/><circle cx="32" cy="16" r="6"/><circle cx="32" cy="48" r="6"/><circle cx="48" cy="32" r="6"/></g></svg>`,
-  `<svg viewBox="0 0 64 64"><defs><linearGradient id="g3" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#22c55e"/><stop offset="1" stop-color="#16a34a"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#16a34a" opacity=".08"/><path d="M14 38c10 2 26-10 36-24 2 20-12 34-26 36-4-2-8-6-10-12z" fill="url(#g3)"/></svg>`,
-  `<svg viewBox="0 0 64 64"><defs><linearGradient id="g4" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#f59e0b"/><stop offset="1" stop-color="#ef4444"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#f59e0b" opacity=".09"/><path d="M32 10l16 10v24L32 54 16 44V20z" fill="url(#g4)"/></svg>`,
-  `<svg viewBox="0 0 64 64"><defs><linearGradient id="g5" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#06b6d4"/><stop offset="1" stop-color="#3b82f6"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#3b82f6" opacity=".06"/><circle cx="32" cy="32" r="10" fill="url(#g5)"/><ellipse cx="32" cy="32" rx="22" ry="10" fill="none" stroke="#60a5fa" stroke-width="3"/></svg>`,
-  `<svg viewBox="0 0 64 64"><defs><linearGradient id="g6" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#10b981"/><stop offset="1" stop-color="#34d399"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#10b981" opacity=".07"/><path d="M14 46 L26 22 L38 40 L50 18 L54 46 Z" fill="url(#g6)"/></svg>`,
-  `<svg viewBox="0 0 64 64"><defs><linearGradient id="g7" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#06b6d4"/><stop offset="1" stop-color="#7c3aed"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#0ea5e9" opacity=".08"/><g fill="url(#g7)"><rect x="14" y="14" width="36" height="8" rx="3"/><rect x="14" y="28" width="36" height="8" rx="3"/><rect x="14" y="42" width="36" height="8" rx="3"/></g></svg>`,
-  `<svg viewBox="0 0 64 64"><defs><linearGradient id="g8" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#ef4444"/><stop offset="1" stop-color="#f97316"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#ef4444" opacity=".07"/><polyline points="10,34 22,34 28,20 36,48 42,30 54,30" fill="none" stroke="url(#g8)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-  `<svg viewBox="0 0 64 64"><defs><linearGradient id="g9" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#3b82f6"/><stop offset="1" stop-color="#22c55e"/></linearGradient></defs><rect x="6" y="6" width="52" height="52" rx="14" fill="#eef2ff"/><path d="M18 44 L32 18 L46 44 Z" fill="url(#g9)"/></svg>`,
-  `<svg viewBox="0 0 64 64"><defs><linearGradient id="g10" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#f43f5e"/><stop offset="1" stop-color="#6366f1"/></linearGradient></defs><rect x="6" y="6" width="52" height="52" rx="14" fill="#fff7ed"/><circle cx="32" cy="32" r="16" fill="url(#g10)"/></svg>`,
-  `<svg viewBox="0 0 64 64"><defs><linearGradient id="g11" x1="1" y="0" x2="0" y="1"><stop offset="0" stop-color="#06b6d4"/><stop offset="1" stop-color="#0ea5e9"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="16" fill="#ecfeff"/><path d="M16 40 C24 28, 40 28, 48 40" stroke="url(#g11)" stroke-width="8" fill="none" stroke-linecap="round"/></svg>`,
-  `<svg viewBox="0 0 64 64"><defs><linearGradient id="g12" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#a78bfa"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><rect x="5" y="5" width="54" height="54" rx="16" fill="#f5f3ff"/><rect x="18" y="18" width="28" height="28" rx="6" fill="url(#g12)"/></svg>`
+  `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g1" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#2563eb"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><rect rx="14" x="4" y="4" width="56" height="56" fill="#0ea5e9" opacity=".08"/><path d="M8 40 Q22 18 34 28 T56 28 L56 56 H8 Z" fill="url(#g1)"/></svg>`,
+  `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g2" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#7c3aed"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#7c3aed" opacity=".06"/><g fill="url(#g2)"><circle cx="16" cy="32" r="6"/><circle cx="32" cy="16" r="6"/><circle cx="32" cy="48" r="6"/><circle cx="48" cy="32" r="6"/></g></svg>`,
+  `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g3" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#22c55e"/><stop offset="1" stop-color="#16a34a"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#16a34a" opacity=".08"/><path d="M14 38c10 2 26-10 36-24 2 20-12 34-26 36-4-2-8-6-10-12z" fill="url(#g3)"/></svg>`,
+  `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g4" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#f59e0b"/><stop offset="1" stop-color="#ef4444"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#f59e0b" opacity=".09"/><path d="M32 10l16 10v24L32 54 16 44V20z" fill="url(#g4)"/></svg>`,
+  `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g5" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#06b6d4"/><stop offset="1" stop-color="#3b82f6"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#3b82f6" opacity=".06"/><circle cx="32" cy="32" r="10" fill="url(#g5)"/><ellipse cx="32" cy="32" rx="22" ry="10" fill="none" stroke="#60a5fa" stroke-width="3"/></svg>`,
+  `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g6" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#10b981"/><stop offset="1" stop-color="#34d399"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#10b981" opacity=".07"/><path d="M14 46 L26 22 L38 40 L50 18 L54 46 Z" fill="url(#g6)"/></svg>`,
+  `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g7" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#06b6d4"/><stop offset="1" stop-color="#7c3aed"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#0ea5e9" opacity=".08"/><g fill="url(#g7)"><rect x="14" y="14" width="36" height="8" rx="3"/><rect x="14" y="28" width="36" height="8" rx="3"/><rect x="14" y="42" width="36" height="8" rx="3"/></g></svg>`,
+  `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g8" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#ef4444"/><stop offset="1" stop-color="#f97316"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#ef4444" opacity=".07"/><polyline points="10,34 22,34 28,20 36,48 42,30 54,30" fill="none" stroke="url(#g8)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g9" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#3b82f6"/><stop offset="1" stop-color="#22c55e"/></linearGradient></defs><rect x="6" y="6" width="52" height="52" rx="14" fill="#eef2ff"/><path d="M18 44 L32 18 L46 44 Z" fill="url(#g9)"/></svg>`,
+  `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g10" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#f43f5e"/><stop offset="1" stop-color="#6366f1"/></linearGradient></defs><rect x="6" y="6" width="52" height="52" rx="14" fill="#fff7ed"/><circle cx="32" cy="32" r="16" fill="url(#g10)"/></svg>`,
+  `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g11" x1="1" y="0" x2="0" y="1"><stop offset="0" stop-color="#06b6d4"/><stop offset="1" stop-color="#0ea5e9"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="16" fill="#ecfeff"/><path d="M16 40 C24 28, 40 28, 48 40" stroke="url(#g11)" stroke-width="8" fill="none" stroke-linecap="round"/></svg>`,
+  `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g12" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#a78bfa"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><rect x="5" y="5" width="54" height="54" rx="16" fill="#f5f3ff"/><rect x="18" y="18" width="28" height="28" rx="6" fill="url(#g12)"/></svg>`
 ];
 let filteredLogos=[...GENERIC_LOGOS];
 function openLogoPicker(){
@@ -462,9 +467,9 @@ $('#logoBtn').addEventListener('click', openLogoPicker);
 logoBox.addEventListener('click', openLogoPicker);
 lpClose.onclick=closeLogoPicker;
 lpAuto.onclick=()=>{ if(demoMode){ toast('Demo mode: logo editing is disabled'); return; } lpBig.innerHTML = svgAutoInitials(siteNameEl.textContent.trim()); lpSelectedIndex=-1; };
-lpReset.onclick=()=>{ if(demoMode){ toast('Demo mode: logo editing is disabled'); return; } lpBig.innerHTML = `<svg viewBox="0 0 64 64"><defs><linearGradient id="g0" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#2563eb"/><stop offset="1" stop-color="#7c3aed"/></linearGradient></defs><rect x="2" y="2" width="60" height="60" rx="14" fill="url(#g0)"/></svg>`; lpSelectedIndex=-2; };
+lpReset.onclick=()=>{ if(demoMode){ toast('Demo mode: logo editing is disabled'); return; } lpBig.innerHTML = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g0' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#2563eb'/><stop offset='1' stop-color='#7c3aed'/></linearGradient></defs><rect x='2' y='2' width='60' height='60' rx='14' fill='url(#g0)'/></svg>`; lpSelectedIndex=-2; };
 lpSearch.oninput=()=>{ const q=lpSearch.value.trim().toLowerCase(); filteredLogos = GENERIC_LOGOS.filter((_,i)=>('logo '+(i+1)).includes(q) || !q); lpSelectedIndex=0; paintLogoGrid(); lpBig.innerHTML=filteredLogos[0]||''; };
-lpUse.onclick=()=>{ if(demoMode){ toast('Demo mode: logo editing is disabled'); return; } logoBox.innerHTML = lpBig.innerHTML; saveBrand(); closeLogoPicker(); };
+lpUse.onclick=()=>{ if(demoMode){ toast('Demo mode: logo editing is disabled'); return; } logoBox.innerHTML = lpBig.innerHTML; updateFaviconFromLogo(); saveBrand(); closeLogoPicker(); };
 loadBrand();
 
 /* ================= MODEL ================= */
@@ -674,7 +679,7 @@ const pageHeader=$('#pageHeader'), formNote=$('#formNote');
 function getItem(){ return current && findNavNode(current.place,current.id); }
 function openDesigner(item){ current={id:item.id,place:item.place,name:item.name}; pageHeader.textContent=item.name; if(!item.root) item.root=defaultRootSection(item.name); if(!targetSectionId) targetSectionId=item.root.id; render(); }
 
-/* rename feature inline */
+/* rename feature inline (no re-render until blur) */
 pageHeader.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); pageHeader.blur(); }});
 pageHeader.addEventListener('blur', ()=>{
   if(demoMode) return;
@@ -693,10 +698,9 @@ function renderSection(sec){
   const wrap=document.createElement('div'); wrap.className='section'; wrap.dataset.nid=sec.id;
 
   const head=document.createElement('div'); head.className='section-title';
-  head.innerHTML=`<div>${sec.name}</div>`;
+  const titleEl=document.createElement('div'); titleEl.className='section-name'; titleEl.textContent=sec.name; head.appendChild(titleEl);
   const tools=document.createElement('div'); tools.className='section-toolbar';
 
-  // edit/delete icons for section + existing adders
   const editBtn=document.createElement('button'); editBtn.className='stool'; editBtn.textContent='✏️ Edit';
   editBtn.onclick=()=>{ if(!demoMode){ selectedNodeId=sec.id; openInspector(sec.id); } else toast('Demo mode: editing disabled'); };
   const delBtn=document.createElement('button'); delBtn.className='stool'; delBtn.textContent='🗑️ Delete';
@@ -768,7 +772,6 @@ function renderField(fd){
   const host=document.createElement('div'); host.style.display='flex'; host.style.alignItems='center'; host.style.gap='6px'; host.style.flexWrap='wrap';
   host.appendChild(buildControl(fd)); row.appendChild(host); wrapper.appendChild(row); card.appendChild(wrapper);
 
-  // ONLY edit icon opens inspector
   edit.onclick=(e)=>{ e.stopPropagation(); if(!demoMode){ selectedNodeId=fd.id; openInspector(fd.id); } else toast('Demo mode: editing disabled'); };
   del.onclick=(e)=>{ e.stopPropagation(); if(!demoMode){ deleteNode(fd.id); } else toast('Demo mode: editing disabled'); };
 
@@ -819,6 +822,14 @@ const insp=$('#inspector'), inspTitle=$('#inspTitle'), inspBody=$('#inspBody'), 
 const inspClose=$('#inspClose'), inspDone=$('#inspDone'), inspUp=$('#inspUp'), inspDown=$('#inspDown'), inspDup=$('#inspDup'), inspDel=$('#inspDel');
 inspClose.onclick=()=>insp.classList.remove('open'); inspDone.onclick=()=>insp.classList.remove('open');
 
+/* Close inspector when clicking outside */
+document.addEventListener('mousedown', (e)=>{
+  if(!insp.classList.contains('open')) return;
+  const clickedInside = insp.contains(e.target);
+  const isEditButton = e.target.closest('.icon-btn') || e.target.closest('.stool'); // edit buttons
+  if(!clickedInside && !isEditButton){ insp.classList.remove('open'); }
+});
+
 function openInspector(id){
   if(demoMode) return;
   const item=getItem(); if(!item) return;
@@ -850,9 +861,7 @@ function highlightSelected(){ $$('.fcard,.section,.divider-card').forEach(el=> e
 
 /* === Live label updater (keep caret) === */
 function updateFieldLabelText(fieldId, text){
-  const card = document.querySelector(`.fcard[data-nid="${fieldId}"]`);
-  if(!card) return;
-  const span = card.querySelector('.label-editable');
+  const span = document.querySelector(`.fcard[data-nid="${fieldId}"] .label-editable`);
   if(span) span.textContent = text || '';
 }
 
@@ -869,7 +878,7 @@ function paintInspectorPane(which,node,hit){
   inspBody.innerHTML='';
   if(which==='basics'){
     if(node.type==='field'){
-      // label input with no full re-render while typing
+      // Field label input — no re-render while typing
       (() => {
         const el = input(node.name, v => { node.name = v; updateFieldLabelText(node.id, v); });
         el.addEventListener('blur', () => { render(); openInspector(node.id); });
@@ -893,8 +902,17 @@ function paintInspectorPane(which,node,hit){
         inspBody.append(row('Button action', select(['none','submit','reset'], node.btnAction||'none', v=>{node.btnAction=v; render();})));
       }
     } else if(node.type==='section'){
-      inspBody.append(row('Title', input(node.name,v=>{node.name=v; render(); openInspector(node.id);})));
-      const area=document.createElement('textarea'); area.className='textarea'; area.value=node.description||''; area.oninput=()=>{node.description=area.value; render();};
+      // Section title: no re-render while typing; update live DOM title
+      const el = input(node.name, v => {
+        node.name = v;
+        const domTitle = document.querySelector(`.section[data-nid="${node.id}"] .section-name`);
+        if(domTitle) domTitle.textContent = v;
+      });
+      el.addEventListener('blur', ()=>{ render(); openInspector(node.id); });
+      inspBody.append(row('Title', el));
+
+      const area=document.createElement('textarea'); area.className='textarea'; area.value=node.description||''; area.oninput=()=>{node.description=area.value;};
+      area.addEventListener('blur', ()=>{ render(); openInspector(node.id); });
       inspBody.append(row('Description', area));
       inspBody.append(row('Span (1-4 cols)', num(node.span||4,v=>{node.span=clamp(Number(v)||4,1,4); render();})));
     } else {
@@ -1094,21 +1112,17 @@ function openDTP(targetInput){
     const prevM = new Date(cur); prevM.setMonth(month-1); const prevDays = new Date(prevM.getFullYear(), prevM.getMonth()+1, 0).getDate();
     const days = new Date(cur.getFullYear(), month+1, 0).getDate();
 
-    // leading
     for(let i=firstDay-1;i>=0;i--){
       const v=prevDays-i; const c=document.createElement('div'); c.className='dtp-cell dis'; c.textContent=v; grid.appendChild(c);
     }
-    // current
     const today=new Date();
     for(let d=1; d<=days; d++){
       const c=document.createElement('div'); c.className='dtp-cell'; c.textContent=d;
       const isToday = today.getFullYear()===state.d.getFullYear() && today.getMonth()===state.d.getMonth() && today.getDate()===d;
       if(isToday) c.classList.add('cur');
-      if(d===start.getDate() && month===start.getMonth()) c.classList.add('sel');
       c.onclick=()=>{ state.d.setDate(d); renderHead(); renderCal(); };
       grid.appendChild(c);
     }
-    // trailing
     const total = firstDay + days;
     for(let i=1;i<= (7 - (total % 7 || 7)); i++){
       const c=document.createElement('div'); c.className='dtp-cell dis'; c.textContent=i; grid.appendChild(c);
