@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Website Name · Designer</title>
+<style>
+  :root{
+    --bg:#f6f8fc; --surface:#ffffff; --text:#0f172a; --muted:#64748b; --line:#e5e7eb;
+    --primary:#2563eb; --shadow:0 10px 25px rgba(2,8,23,.08), 0 2px 6px rgba(2,8,23,.06);
+    --radius:16px; --nav-h:64px; --side-w:260px; --insp-w:420px; --container:1200px;
+    --ctrl-h:44px; --ctrl-r:12px;
+  }
+  *{box-sizing:border-box} html,body{height:100%}
+  body{
+    margin:0;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial;color:var(--text);
+    background:radial-gradient(1200px 600px at 10% -10%,#ebf2ff 0%,transparent 40%),radial-gradient(1000px 500px at 90% 110%,#eaf7ef 0%,transparent 40%),var(--bg)
+  }
+
+  /* Topbar */
+  .topbar{position:sticky;top:0;z-index:80;height:var(--nav-h);backdrop-filter:saturate(180%) blur(8px);background:rgba(255,255,255,.9);border-bottom:1px solid var(--line)}
+  .topbar .inner{height:100%;display:flex;align-items:center;gap:12px;padding:0 18px;max-width:var(--container);margin:0 auto}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800}
+  .logo{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,var(--primary),#7c3aed);color:#fff;font-weight:900;cursor:pointer;border:1px solid #c7d2fe}
+  .brand-name[contenteditable="true"]{outline:none;border-radius:8px;padding:3px 6px}
+  .brand-name[contenteditable="true"]:focus{box-shadow:0 0 0 2px #bfdbfe;background:#eff6ff}
+  .menu-btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 10px;font-weight:800;cursor:pointer;display:none}
+  .grow{flex:1}
+
+  /* Mode switch */
+  .mode-switch{display:inline-flex;border:1px solid var(--line);border-radius:999px;background:#fff;overflow:hidden}
+  .mode-switch button{padding:8px 12px;border:0;background:transparent;cursor:pointer;font-weight:800}
+  .mode-switch button.active{background:#1e40af;color:#fff}
+  .mode-hint{font-size:12px;color:var(--muted);margin-left:8px}
+
+  /* Inputs / buttons */
+  .input,.select,.textarea{background:#fff;border:1px solid var(--line);border-radius:var(--ctrl-r);padding:10px 12px;min-width:0;outline:none;height:var(--ctrl-h)}
+  .textarea{height:96px;resize:vertical}
+  .btn{border:0;padding:10px 14px;border-radius:12px;font-weight:700;cursor:pointer;height:var(--ctrl-h)}
+  .btn.primary{background:linear-gradient(135deg,#60a5fa,#22d3ee);color:#081326;border:1px solid #bae6fd}
+  .btn.ghost{background:#fff;border:1px solid var(--line)}
+  .chip{display:inline-flex;gap:8px;align-items:center;background:#e0f2fe;color:#0c4a6e;border:1px solid #bae6fd;border-radius:999px;padding:6px 10px;font-size:12px}
+
+  /* Layout */
+  .layout{display:grid;grid-template-columns:var(--side-w) 1fr;gap:0;max-width:var(--container);margin:0 auto;min-height:calc(100vh - var(--nav-h))}
+  .sidebar{position:sticky;top:var(--nav-h);align-self:start;height:calc(100vh - var(--nav-h));padding:18px;border-right:1px solid var(--line);background:#fff;z-index:50}
+  .content{padding:18px;display:grid;gap:18px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:clamp(16px,2vw,24px)}
+  .card header{font-size:clamp(20px,2.4vw,30px);font-weight:800;margin-bottom:6px}
+  .inline{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .hint{color:var(--muted);font-size:12px}
+  .sep{height:1px;background:var(--line);margin:8px 0}
+  .side-title{font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:#64748b;margin:10px 4px 8px}
+
+  /* ==================== NAVS ==================== */
+  .hwrap{display:flex;align-items:center;gap:6px;min-width:0;margin-left:10px}
+  .hbtn{border:1px solid var(--line);background:#fff;border-radius:10px;width:34px;height:34px;display:grid;place-items:center;cursor:pointer}
+  .hribbon{display:flex;gap:6px;align-items:center;overflow:auto;white-space:nowrap;padding:6px 2px;max-width:520px}
+  .hribbon::-webkit-scrollbar{height:6px} .hribbon::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:999px}
+  .h-item{position:relative}
+  .h-link{display:inline-flex;gap:8px;align-items:center;text-decoration:none;color:#0b1324;padding:8px 12px;border-radius:12px;font-weight:600;border:1px solid transparent}
+  .h-link:hover,.h-link.active{background:#eef2ff;color:#1d4ed8;border-color:#c7d2fe}
+  .h-ico{font-size:14px}
+  .h-caret{font-size:12px;opacity:.7}
+
+  .vnav{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+  .vitem{border-radius:12px}
+  .vbtn{width:100%;display:flex;align-items:center;gap:10px;text-align:left;padding:10px 12px;border:1px solid var(--line);background:#fff;border-radius:12px;cursor:pointer;font-weight:600}
+  .vbtn:hover,.vbtn.active{background:#eef2ff;color:#1d4ed8;border-color:#c7d2fe}
+  .vcaret{margin-left:auto;opacity:.7;transition:transform .15s ease}
+  .vitem.open > .vbtn .vcaret{transform:rotate(90deg)}
+  .vchildren{margin-left:10px;padding-left:12px;border-left:1px dashed #e2e8f0;display:none;gap:6px}
+  .vitem.open > .vchildren{display:grid}
+  .ico{opacity:.9}
+
+  /* Adders */
+  .adder-pop{position:relative}
+  .adder-pop > button{border:1px dashed var(--line);background:#fff;border-radius:10px;padding:8px 10px;font-weight:700;cursor:pointer}
+  .adder-pop .panel{position:absolute;top:120%;left:0;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px;box-shadow:var(--shadow);display:none;width:360px;z-index:80}
+  .adder-pop.open .panel{display:block}
+  .row{display:flex;gap:8px;flex-wrap:wrap}
+
+  /* ===== Floating Horizontal Dropdown ===== */
+  .fly-root{position:fixed; inset:0; display:none; z-index:120;}
+  .fly-root.open{display:block;}
+  .fly{position:fixed; top:0; left:0; min-width:240px; max-width:320px; max-height:70vh; overflow:auto;
+       background:#fff; border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:6px}
+  .fly .item{display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; cursor:pointer}
+  .fly .item:hover{background:#f1f5f9}
+  .fly .item .caret{margin-left:auto; opacity:.6}
+  .fly .sub{position:fixed; display:none; min-width:220px; max-height:60vh; overflow:auto; background:#fff; border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); padding:6px}
+  .fly .item.open + .sub{display:block}
+
+  /* ============ FORM (compact labels) ============ */
+  .section{border:1px dashed #cbd5e1;border-radius:12px;padding:12px;background:#fff;margin-top:10px}
+  .section-title{display:flex;align-items:center;gap:8px;font-weight:800;margin-bottom:8px}
+  .section-toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+  .stool{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 10px;font-size:12px;cursor:pointer}
+  .grid4{display:grid;grid-template-columns:repeat(4, minmax(0,1fr));gap:12px}
+  .fcard{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0;position:relative}
+  .field-icons{position:absolute;top:8px;right:8px;display:flex;gap:6px;align-items:center;background:#ffffffcc;border:1px solid var(--line);border-radius:999px;padding:4px 6px}
+  .icon-btn{border:1px solid var(--line);background:#fff;border-radius:999px;padding:4px 8px;font-size:12px;cursor:pointer}
+  .icon-del{color:#b91c1c;border-color:#fecaca}
+  .preview-form .field{display:grid;grid-template-columns:180px 1fr;column-gap:8px;row-gap:4px;align-items:center}
+  .preview-form label{color:#334155;font-weight:600;margin:0;line-height:1.2}
+  .preview-form input,.preview-form select,.preview-form textarea{width:100%;height:var(--ctrl-h);padding:10px 12px;border-radius:var(--ctrl-r);border:1px solid var(--line);background:#fff;color:#0f172a}
+  .preview-form textarea{height:auto;min-height:112px}
+  .choice-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .choice{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+  .choice input{appearance:none;-webkit-appearance:none;width:16px;height:16px;margin:0;display:inline-grid;place-items:center;border:1.5px solid #cbd5e1;border-radius:4px;background:#fff}
+  .choice input[type="radio"]{border-radius:999px}
+  .choice input:checked{border-color:#2563eb;background:#2563eb}
+  .choice input[type="checkbox"]::after{content:"";width:8px;height:8px;transform:rotate(45deg);border-right:2px solid #fff;border-bottom:2px solid #fff;display:block}
+  .choice input[type="radio"]::after{content:"";width:8px;height:8px;background:#fff;border-radius:999px;display:block}
+
+  /* Inspector (tabs) */
+  .inspector{position:fixed;top:var(--nav-h);right:0;width:var(--insp-w);height:calc(100vh - var(--nav-h));background:#fff;border-left:1px solid var(--line);box-shadow:-10px 0 25px rgba(2,8,23,.08);transform:translateX(105%);transition:transform .15s ease;z-index:90;display:flex;flex-direction:column}
+  .inspector.open{transform:none}
+  .insp-head{padding:12px 14px;border-bottom:1px solid var(--line);font-weight:800;display:flex;align-items:center;gap:8px}
+  .insp-tabs{display:flex;gap:6px;padding:8px 12px;border-bottom:1px solid var(--line)}
+  .insp-tab{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 10px;cursor:pointer;font-size:12px}
+  .insp-tab.active{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8}
+  .insp-body{padding:14px;display:grid;gap:12px;overflow:auto}
+  .insp-row{display:grid;gap:6px}
+  .insp-row .label{font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.08em}
+  .insp-actions{display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line);padding:12px 14px;margin-top:auto}
+  .insp-btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 10px;cursor:pointer}
+  .insp-btn.primary{background:linear-gradient(135deg,#60a5fa,#22d3ee);border-color:#bae6fd}
+
+  /* Demo mode hides editing chrome */
+  body.demo-mode .inspector, body.demo-mode #builderToolbar, body.demo-mode .section-toolbar,
+  body.demo-mode .field-icons, body.demo-mode .adder-pop { display:none !important }
+
+  /* Logo picker modal */
+  .logo-picker{position:fixed;inset:0;background:rgba(15,23,42,.35);display:none;align-items:center;justify-content:center;z-index:150}
+  .logo-picker.open{display:flex}
+  .lp-panel{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);width:min(780px,92vw);max-height:80vh;display:flex;flex-direction:column}
+  .lp-head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);font-weight:800}
+  .lp-body{padding:12px;display:grid;gap:12px;overflow:auto}
+  .lp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:12px}
+  .lp-item{border:1px solid var(--line);border-radius:12px;padding:10px;display:grid;place-items:center;gap:6px;cursor:pointer;background:#fff}
+  .lp-item:hover{background:#f8fafc}
+  .lp-item svg{width:48px;height:48px}
+  .lp-foot{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}
+  .isearch{flex:1}
+
+  /* Responsive */
+  @media (max-width:1024px){ .layout{grid-template-columns:1fr} .sidebar{position:fixed;top:var(--nav-h);left:0;width:min(86vw,320px);transform:translateX(-105%);transition:transform .15s ease;box-shadow:var(--shadow)} body.side-open .sidebar{transform:none} .menu-btn{display:inline-block} }
+  @media (max-width:640px){ .grid4{grid-template-columns:1fr} .preview-form .field{grid-template-columns:1fr} .btn,.input,.select{width:100%} #formActions{flex-direction:column;align-items:stretch} .hribbon{max-width:50vw} }
+</style>
+</head>
+<body>
+  <!-- Topbar -->
+  <nav class="topbar">
+    <div class="inner">
+      <div class="brand">
+        <div class="logo" id="logoBox" title="Click to change logo"></div>
+        <div id="siteName" class="brand-name" contenteditable="true" spellcheck="false" title="Click to edit">
+          Website Name
+        </div>
+        <button id="logoBtn" class="btn ghost" style="height:32px;padding:6px 10px">Logo</button>
+      </div>
+
+      <button id="toggleSideBtn" class="menu-btn">☰ Menu</button>
+
+      <!-- Horizontal ribbon -->
+      <div class="hwrap" style="flex:1;min-width:0">
+        <button class="hbtn" id="hPrev" title="Scroll left">‹</button>
+        <div class="hribbon" id="hRibbon" role="menubar" aria-label="Features"></div>
+        <button class="hbtn" id="hNext" title="Scroll right">›</button>
+
+        <!-- Add horizontal item -->
+        <div class="adder-pop" id="hAdder">
+          <button type="button" aria-haspopup="true" aria-expanded="false">＋ Add</button>
+          <div class="panel">
+            <div class="row">
+              <input id="navNameH" class="input" placeholder="Item name…" style="flex:1" />
+              <input id="iconPreviewH" class="input" placeholder="Icon (emoji/text)" style="width:140px" />
+            </div>
+            <div class="row">
+              <select id="navParentH" class="select" style="flex:1"></select>
+              <button class="btn primary" id="addNavBtnH">Add</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mode switch -->
+      <div class="mode-switch" id="modeSwitch">
+        <button id="modeEdit" class="active" aria-selected="true">Edit</button>
+        <button id="modeDemo" aria-selected="false">Demo</button>
+      </div>
+      <div class="mode-hint">Shift+D</div>
+    </div>
+  </nav>
+
+  <!-- Layout -->
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="side-title">Menu</div>
+      <ul id="vNav" class="vnav"></ul>
+
+      <!-- Add vertical item -->
+      <div class="adder-pop" id="vAdder" style="margin-top:10px">
+        <button type="button">＋ Add menu item</button>
+        <div class="panel">
+          <div class="row">
+            <input id="navNameV" class="input" placeholder="Item name…" style="flex:1" />
+            <input id="iconPreviewV" class="input" placeholder="Icon (emoji/text)" style="width:140px" />
+          </div>
+          <div class="row">
+            <select id="navParentV" class="select" style="flex:1"></select>
+            <button class="btn primary" id="addNavBtnV">Add</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="side-title" style="margin-top:14px">Admin</div>
+      <ul class="vnav">
+        <li class="vitem"><button class="vbtn"><span class="ico">⚙️</span> Settings</button></li>
+        <li class="vitem"><button class="vbtn"><span class="ico">🔒</span> Roles & Access</button></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <section class="card" id="designerCard">
+        <header id="pageHeader">FORM_NAME</header>
+
+        <!-- Builder bar -->
+        <div class="inline" id="builderToolbar">
+          <div class="hint">Target Section:</div>
+          <div id="targetBreadcrumb" class="hint" style="font-weight:700">/</div>
+          <div class="grow"></div>
+          <input id="fieldName" class="input" placeholder="Field name…" style="min-width:220px" />
+          <select id="fieldType" class="select" title="Field type">
+            <option value="text">Text</option><option value="textarea">Textarea</option><option value="number">Number</option>
+            <option value="email">Email</option><option value="tel">Phone</option><option value="url">URL</option><option value="password">Password</option>
+            <option value="date">Date</option><option value="time">Time</option><option value="datetime">Date & Time</option><option value="color">Color</option>
+            <option value="dropdown">Dropdown</option><option value="multiselect">Multi Select</option><option value="radio">Radio Group</option><option value="checkboxes">Checkbox Group</option><option value="toggle">Toggle</option>
+            <option value="range">Slider</option><option value="file">File Upload</option><option value="rating">Rating (Stars)</option><option value="button">Button</option>
+          </select>
+          <button class="btn primary" id="addFieldBtn">＋ Add field</button>
+          <button class="btn ghost" id="addSubSecBtn">＋ Section</button>
+          <button class="btn ghost" id="addDividerBtn">— Divider</button>
+        </div>
+        <div class="sep"></div>
+
+        <div id="formHost"></div>
+
+        <div id="formActions" class="inline" style="margin-top:12px;gap:10px">
+          <button id="formSubmit" class="btn primary" type="button">Submit</button>
+          <button id="formReset" class="btn ghost" type="button">Reset</button>
+          <div id="formNote" class="hint"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Inspector -->
+  <aside id="inspector" class="inspector" aria-label="Inspector">
+    <div class="insp-head"><span id="inspTitle">Inspector</span><div class="grow"></div><button id="inspClose" class="insp-btn">✖</button></div>
+    <div class="insp-tabs" id="inspTabs"></div>
+    <div class="insp-body" id="inspBody"></div>
+    <div class="insp-actions">
+      <button id="inspUp" class="insp-btn">↑ Up</button>
+      <button id="inspDown" class="insp-btn">↓ Down</button>
+      <button id="inspDup" class="insp-btn">⧉ Duplicate</button>
+      <button id="inspDel" class="insp-btn" style="color:#b91c1c;border-color:#fecaca">🗑️ Delete</button>
+      <div class="grow"></div>
+      <button id="inspDone" class="insp-btn primary">Done</button>
+    </div>
+  </aside>
+
+  <!-- Floating menu root -->
+  <div id="flyRoot" class="fly-root" aria-hidden="true"></div>
+
+  <!-- Logo Picker -->
+  <div id="logoPicker" class="logo-picker" role="dialog" aria-modal="true" aria-labelledby="lpTitle">
+    <div class="lp-panel">
+      <div class="lp-head"><span id="lpTitle">Choose a logo</span><div class="grow"></div><button id="lpClose" class="insp-btn">✖</button></div>
+      <div class="lp-body">
+        <div class="hint">Tip: “Auto Initials” renders the first letters of your current Website Name.</div>
+        <div id="lpGrid" class="lp-grid"></div>
+      </div>
+      <div class="lp-foot">
+        <button id="lpAuto" class="btn primary">Use Auto Initials</button>
+        <button id="lpReset" class="btn ghost">Minimal Gradient</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ================= MODE ================= */
+let demoMode=false; const modeEditBtn=document.getElementById('modeEdit'), modeDemoBtn=document.getElementById('modeDemo');
+function applyMode(){ document.body.classList.toggle('demo-mode', demoMode); modeEditBtn.classList.toggle('active', !demoMode); modeDemoBtn.classList.toggle('active', demoMode); localStorage.setItem('hrsuite_demo', demoMode?'1':'0'); if(demoMode) closeInspector(); }
+modeEditBtn.onclick=()=>{ demoMode=false; applyMode(); }; modeDemoBtn.onclick=()=>{ demoMode=true; applyMode(); };
+document.addEventListener('keydown',e=>{ if(e.shiftKey && e.key.toLowerCase()==='d'){ demoMode=!demoMode; applyMode(); }});
+(function(){ demoMode = localStorage.getItem('hrsuite_demo')==='1'; applyMode(); })();
+
+/* ================= HELPERS ================= */
+const $=(s,d=document)=>d.querySelector(s), $$=(s,d=document)=>Array.from(d.querySelectorAll(s));
+const uid=()=>Math.random().toString(36).slice(2,10);
+
+/* ================= SITE NAME (inline editable) ================= */
+const siteNameEl=$('#siteName'), logoBox=$('#logoBox');
+function getInitials(name){ return (name||'').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase() || 'WN'; }
+function renderAutoInitials(){
+  const initials=getInitials(siteNameEl.textContent.trim());
+  logoBox.innerHTML = `
+    <svg viewBox="0 0 64 64" aria-hidden="true">
+      <defs>
+        <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#2563eb"/><stop offset="1" stop-color="#7c3aed"/>
+        </linearGradient>
+      </defs>
+      <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#g)"/>
+      <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" font-size="26" font-weight="800" fill="#fff" font-family="ui-sans-serif,system-ui,Segoe UI,Roboto">${initials}</text>
+    </svg>`;
+}
+function saveBrand(){ localStorage.setItem('site_name', siteNameEl.textContent.trim()); localStorage.setItem('site_logo_html', logoBox.innerHTML); document.title = siteNameEl.textContent.trim()+' · Designer'; }
+function loadBrand(){
+  const n=localStorage.getItem('site_name'); if(n){ siteNameEl.textContent=n; document.title=n+' · Designer'; }
+  const h=localStorage.getItem('site_logo_html'); if(h){ logoBox.innerHTML=h; } else { renderAutoInitials(); }
+}
+siteNameEl.addEventListener('input', ()=>{ renderAutoInitials(); saveBrand(); });
+siteNameEl.addEventListener('blur', saveBrand);
+logoBox.addEventListener('click', ()=> openLogoPicker());
+$('#logoBtn').addEventListener('click', ()=> openLogoPicker());
+loadBrand();
+
+/* ================= MODEL ================= */
+const Model={ items:[] }; // {id,name,place:'h'|'v',icon,children:[],root}
+let current=null, selectedNodeId=null, targetSectionId=null;
+
+/* ================= NAV helpers ================= */
+function findParentOf(id, place){
+  let parent=null;
+  (function walk(list,p=null){
+    for(const n of list){
+      if(n.id===id){ parent=p; return; }
+      if(n.children?.length){ walk(n.children,n); if(parent) return; }
+    }
+  })(Model.items.filter(i=>i.place===place));
+  return parent;
+}
+function depthOfNode(place,id){
+  let depth=-1;
+  (function walk(list,d){
+    for(const n of list){
+      if(n.id===id){ depth=d; return; }
+      if(n.children?.length){ walk(n.children,d+1); if(depth!==-1) return; }
+    }
+  })(Model.items.filter(i=>i.place===place),0);
+  return depth;
+}
+function findNavNode(place,id){
+  let hit=null;
+  (function walk(list){
+    for(const n of list){
+      if(n.id===id){ hit=n; return; }
+      if(n.children?.length){ walk(n.children); if(hit) return; }
+    }
+  })(Model.items.filter(i=>i.place===place));
+  return hit;
+}
+function roots(place){
+  const ids=new Set(Model.items.filter(i=>i.place===place).map(i=>i.id));
+  Model.items.filter(i=>i.place===place).forEach(n=>{ const p=findParentOf(n.id,place); if(p) ids.delete(n.id); });
+  return Model.items.filter(i=>i.place===place && ids.has(i.id));
+}
+
+/* ================= HORIZONTAL RIBBON + FLOATING MENU ================= */
+const hRibbon=$('#hRibbon'), hPrev=$('#hPrev'), hNext=$('#hNext');
+hPrev.onclick=()=>hRibbon.scrollBy({left:-220,behavior:'smooth'}); hNext.onclick=()=>hRibbon.scrollBy({left:220,behavior:'smooth'});
+
+function renderMenus(){
+  hRibbon.innerHTML='';
+  roots('h').forEach(n=> hRibbon.appendChild(buildHItem(n)));
+  const vNav=$('#vNav'); vNav.innerHTML='';
+  roots('v').forEach(n=> vNav.appendChild(buildVItem(n)));
+  setActive();
+}
+function buildHItem(node){
+  const wrap=document.createElement('div'); wrap.className='h-item'; wrap.dataset.id=node.id; wrap.dataset.place=node.place;
+  const hasChildren=(node.children?.length||0)>0;
+  const a=document.createElement('a'); a.href='#'; a.className='h-link'; a.innerHTML=`${node.icon?`<span class="h-ico">${node.icon}</span>`:''}<span>${node.name}</span>${hasChildren?'<span class="h-caret">▾</span>':''}`;
+  a.onclick=(e)=>{ e.preventDefault(); if(hasChildren){ openFlyMenu(node, a); } openDesigner(node); };
+  wrap.appendChild(a);
+  return wrap;
+}
+
+/* Floating menu (portal) */
+const flyRoot=$('#flyRoot');
+function openFlyMenu(node, anchorEl){
+  closeFly();
+  const rect=anchorEl.getBoundingClientRect();
+  const root=document.createElement('div'); root.className='fly';
+  positionPanel(root, rect.bottom+6, Math.min(rect.left, window.innerWidth-340));
+  root.appendChild(buildFlyList(node.children));
+  flyRoot.appendChild(root);
+  flyRoot.classList.add('open');
+  flyRoot.onclick=(e)=>{ if(e.target===flyRoot) closeFly(); };
+  document.addEventListener('keydown', escCloseOnce);
+}
+function escCloseOnce(e){ if(e.key==='Escape'){ closeFly(); } }
+function closeFly(){ flyRoot.classList.remove('open'); flyRoot.innerHTML=''; document.removeEventListener('keydown', escCloseOnce); }
+function positionPanel(panel, top, left){
+  const w=panel.offsetWidth||300;
+  let L=left, T=top;
+  if(L+w>window.innerWidth-8) L=window.innerWidth-w-8;
+  if(T<8) T=8;
+  panel.style.left=L+'px'; panel.style.top=T+'px';
+}
+function buildFlyList(items){
+  const wrap=document.createElement('div');
+  items.forEach(it=>{
+    const row=document.createElement('div'); row.className='item'; row.innerHTML=`${it.icon?`<span>${it.icon}</span>`:''}<span>${it.name}</span>${(it.children?.length?'<span class="caret">▸</span>':'')}`;
+    row.onclick=(e)=>{ e.stopPropagation(); openDesigner(it); if(!(it.children?.length)) closeFly(); };
+    wrap.appendChild(row);
+    if(it.children?.length){
+      const sub=document.createElement('div'); sub.className='sub';
+      sub.appendChild(buildFlyList(it.children));
+      wrap.appendChild(sub);
+      row.addEventListener('mouseenter', ()=>{
+        row.classList.add('open');
+        const r=row.getBoundingClientRect(); sub.style.left=(r.right+6)+'px';
+        const height=sub.offsetHeight||280;
+        sub.style.top=Math.min(r.top, window.innerHeight-height-8)+'px';
+      });
+      row.addEventListener('mouseleave', ()=> row.classList.remove('open'));
+    }
+  });
+  return wrap;
+}
+
+/* ================= VERTICAL NAV (accordion) ================= */
+function buildVItem(node){
+  const li=document.createElement('li'); li.className='vitem'; li.dataset.id=node.id; li.dataset.place=node.place;
+  const hasChildren=(node.children?.length||0)>0;
+  const b=document.createElement('button'); b.className='vbtn'; b.innerHTML=`${node.icon?`<span class="ico">${node.icon}</span>`:'<span class="ico">•</span>'}<span>${node.name}</span>${hasChildren?'<span class="vcaret">▸</span>':''}`;
+  b.onclick=(e)=>{ e.preventDefault(); if(hasChildren) li.classList.toggle('open'); openDesigner(node); };
+  li.appendChild(b);
+  if(hasChildren){
+    const ul=document.createElement('ul'); ul.className='vchildren';
+    node.children.forEach(ch=> ul.appendChild(buildVItem(ch)));
+    li.appendChild(ul);
+  }
+  return li;
+}
+function setActive(){
+  const id=current?.id;
+  $$('#hRibbon .h-link').forEach(a=> a.classList.toggle('active', a.parentElement.dataset.id===id));
+  $$('#vNav .vbtn').forEach(b=> b.classList.toggle('active', b.parentElement.dataset.id===id));
+}
+
+/* ================= ADDERS ================= */
+const hAdder=$('#hAdder'), vAdder=$('#vAdder');
+const navNameH=$('#navNameH'), navParentH=$('#navParentH'), iconPreviewH=$('#iconPreviewH'), addNavBtnH=$('#addNavBtnH');
+const navNameV=$('#navNameV'), navParentV=$('#navParentV'), iconPreviewV=$('#iconPreviewV'), addNavBtnV=$('#addNavBtnV');
+
+hAdder.querySelector('button').onclick = (e)=>{ e.stopPropagation(); populateParentSelect('h'); hAdder.classList.toggle('open'); hAdder.querySelector('button').setAttribute('aria-expanded', hAdder.classList.contains('open')?'true':'false'); };
+document.addEventListener('click', e=>{ if(!hAdder.contains(e.target)) { hAdder.classList.remove('open'); hAdder.querySelector('button').setAttribute('aria-expanded','false'); } });
+vAdder.querySelector('button').onclick = ()=>{ vAdder.classList.toggle('open'); };
+
+function parentChoices(place){
+  const out=[{value:'',text:'(No parent)'}];
+  (function walk(list,d){
+    list.filter(n=>n.place===place).forEach(n=>{
+      out.push({value:n.id,text:'—'.repeat(d)+' '+(n.icon? n.icon+' ':'')+n.name});
+      if(d<2 && n.children?.length) walk(n.children,d+1);
+    });
+  })(Model.items.filter(i=>i.place===place && !findParentOf(i.id,place)),0);
+  return out;
+}
+function populateParentSelect(place){
+  const sel=(place==='h')? navParentH : navParentV; sel.innerHTML='';
+  parentChoices(place).forEach(o=>{ const op=document.createElement('option'); op.value=o.value; op.textContent=o.text; sel.appendChild(op); });
+}
+function addNav(name, place, parentId, icon){
+  if(demoMode) return;
+  const title=(name||'').trim(); if(!title) return;
+  const item={id:uid(),name:title,place,icon:(icon||'').trim(),children:[],root:defaultRootSection(title)};
+  if(!parentId){ Model.items.push(item); }
+  else{
+    const parent=findNavNode(place,parentId); if(!parent) return;
+    if(depthOfNode(place,parentId)>=2){ alert('Maximum depth is 3 levels.'); return; }
+    parent.children.push(item);
+  }
+  renderMenus(); openDesigner(item);
+}
+addNavBtnH.onclick=()=>{ addNav(navNameH.value,'h',navParentH.value||'',iconPreviewH.value); navNameH.value=''; iconPreviewH.value=''; hAdder.classList.remove('open'); };
+addNavBtnV.onclick=()=>{ addNav(navNameV.value,'v',navParentV.value||'',iconPreviewV.value); navNameV.value=''; iconPreviewV.value=''; vAdder.classList.remove('open'); };
+
+/* ================= FORM / DESIGNER ================= */
+function defaultRootSection(title){
+  const root={id:uid(),type:'section',name:title+' · Section 1',description:'',span:4,children:[]};
+  if(/Feature One/i.test(title)){
+    root.children.push(
+      field('text','Full Name',true),
+      field('email','Work Email',true),
+      field('date','Start Date'),
+      options(field('dropdown','Department'),['Engineering','Design','HR','Finance','Sales','Support']),
+      field('text','Manager'),
+      divider(),
+      options(field('checkboxes','Equipment Needed'),['Laptop','Monitor','Keyboard','Headset']),
+      field('textarea','Notes')
+    );
+  }else if(/Feature Two/i.test(title)){
+    root.children.push(
+      field('text','Employee Name',true),
+      options(field('dropdown','Department'),['Engineering','Design','HR','Finance','Sales','Support']),
+      field('date','Expense Date'),
+      options(field('dropdown','Category'),['Travel','Meals','Supplies','Software','Other']),
+      field('number','Amount',true),
+      field('file','Receipt'),
+      divider(),
+      field('textarea','Description'),
+      options(field('radio','Payment Method'),['Reimburse to Payroll','Bank Transfer']),
+      options(field('checkboxes','Policy Acknowledgement'),['I confirm this expense complies with policy'])
+    );
+  }
+  return root;
+}
+function field(ftype,name,req=false){
+  return {
+    id:uid(), type:'field', name, ftype, span:2,
+    required:req, readonly:false, disabled:false,
+    placeholder:'', help:'', default:'',
+    min:'', max:'', step:'', minLen:'', maxLen:'', pattern:'',
+    labelPos:'left',
+    options:[], allowCustom:false,
+    btnStyle:'primary', btnAction:'none',
+    logic:{mode:'all',conditions:[]}
+  };
+}
+function divider(){ return {id:uid(),type:'divider',showLine:true}; }
+function options(node,arr){ node.options=arr.slice(); return node; }
+
+const pageHeader=$('#pageHeader'), targetBreadcrumb=$('#targetBreadcrumb'), formNote=$('#formNote');
+function getItem(){ return current && findNavNode(current.place,current.id); }
+function openDesigner(item){ current={id:item.id,place:item.place,name:item.name}; pageHeader.textContent=item.name; if(!item.root) item.root=defaultRootSection(item.name); if(!targetSectionId) targetSectionId=item.root.id; render(); }
+function render(){ renderForm(); setActive(); paintBreadcrumb(); updateVisibility(); }
+function renderForm(){
+  const item=getItem(); const host=$('#formHost'); host.innerHTML=''; if(!item) return;
+  host.appendChild(renderSection(item.root));
+  $('#designerCard').addEventListener('input', updateVisibility);
+  $('#designerCard').addEventListener('change', updateVisibility);
+}
+function paintBreadcrumb(){
+  const item=getItem(); if(!item) return; const targetId=targetSectionId||item.root.id; const crumbs=[];
+  (function walkTo(root,id,path){ if(root.id===id){ crumbs.push(...path,root); return true; } if(root.type==='section'){ for(const c of root.children){ if(walkTo(c,id,[...path,root])) return true; } } return false; })(item.root,targetId,[]);
+  targetBreadcrumb.textContent = crumbs.map(n=>n.name).join(' / ') || item.root.name;
+}
+function renderSection(sec){
+  const wrap=document.createElement('div'); wrap.className='section'; wrap.dataset.nid=sec.id;
+  const head=document.createElement('div'); head.className='section-title'; head.innerHTML=`<div>${sec.name}</div>`;
+  const tools=document.createElement('div'); tools.className='section-toolbar';
+  [['＋ Field',()=>addFieldInto(sec.id)],['＋ Section',()=>addSubsectionInto(sec.id)],['— Divider',()=>addDividerInto(sec.id)],['🎯 Target',()=>setTarget(sec.id)]].forEach(([t,fn])=>{ const b=document.createElement('button'); b.className='stool'; b.textContent=t; b.onclick=()=>{ if(!demoMode) fn(); }; tools.appendChild(b); });
+  head.appendChild(tools); wrap.appendChild(head);
+  const grid=document.createElement('div'); grid.className='grid4'; wrap.appendChild(grid);
+  const cols = matchMedia('(max-width:640px)').matches ? 1 : matchMedia('(max-width:1024px)').matches ? 2 : 4;
+  for(const node of sec.children){
+    if(node.type==='divider'){ const hr=document.createElement('hr'); hr.style.gridColumn='1/-1'; hr.className='divider-line'; grid.appendChild(hr); continue; }
+    if(node.type==='section'){ const s=renderSection(node); s.style.gridColumn='span '+Math.min(cols,node.span||4); grid.appendChild(s); continue; }
+    const span=Math.max(1, Math.min(cols, Number(node.span)||2));
+    const fc=renderField(node); fc.style.gridColumn='span '+span; grid.appendChild(fc);
+  }
+  wrap.addEventListener('click',(e)=>{ if(demoMode) return; if(e.target.closest('.section-toolbar')) return; selectedNodeId=sec.id; openInspector(sec.id); });
+  return wrap;
+}
+function renderField(fd){
+  const card=document.createElement('div'); card.className='fcard'; card.dataset.nid=fd.id;
+  const bar=document.createElement('div'); bar.className='field-icons';
+  const edit=document.createElement('button'); edit.className='icon-btn'; edit.textContent='✏️';
+  const del=document.createElement('button'); del.className='icon-btn icon-del'; del.textContent='🗑️';
+  bar.append(edit,del); card.appendChild(bar);
+  const wrapper=document.createElement('div'); wrapper.className='preview-form';
+  const row=document.createElement('div'); row.className='field';
+  if(fd.ftype!=='button'){
+    const label=document.createElement('label'); label.htmlFor='f_'+fd.id; label.textContent=fd.name+(fd.required?' *':'');
+    if(fd.labelPos==='top'){ row.style.gridTemplateColumns='1fr'; label.style.marginBottom='2px'; }
+    if(fd.labelPos==='hidden'){ label.style.display='none'; }
+    row.appendChild(label);
+  }
+  const host=document.createElement('div'); host.style.display='flex'; host.style.alignItems='center'; host.style.gap='6px'; host.style.flexWrap='wrap';
+  host.appendChild(buildControl(fd)); row.appendChild(host); wrapper.appendChild(row); card.appendChild(wrapper);
+  edit.onclick=(e)=>{ e.stopPropagation(); if(!demoMode){ selectedNodeId=fd.id; openInspector(fd.id); } };
+  del.onclick=(e)=>{ e.stopPropagation(); if(!demoMode){ deleteNode(fd.id); } };
+  card.onclick=()=>{ if(!demoMode){ selectedNodeId=fd.id; openInspector(fd.id); } };
+  return card;
+}
+function buildControl(fd){
+  const t=(fd.ftype||'text').toLowerCase(), set=(el)=>{ if(fd.placeholder) el.placeholder=fd.placeholder; if(fd.required) el.required=true; if(fd.readonly) el.readOnly=true; if(fd.disabled) el.disabled=true; if(fd.default!=='' && !['radio','checkboxes','toggle','range','rating','button'].includes(t)) try{ el.value=fd.default; }catch{}; if(fd.min) el.min=fd.min; if(fd.max) el.max=fd.max; if(fd.step) el.step=fd.step; if(fd.minLen) el.minLength=fd.minLen; if(fd.maxLen) el.maxLength=fd.maxLen; if(fd.pattern) el.pattern=fd.pattern; };
+  if(t==='button'){ const b=document.createElement('button'); b.type='button'; b.className='btn primary'; b.textContent=fd.name||'Button'; b.onclick=()=>{ if(fd.btnAction==='submit') doSubmit(); else if(fd.btnAction==='reset') doReset(); }; return b; }
+  if(['text','email','tel','url','password','number','date','time','datetime','color'].includes(t)){ const i=document.createElement('input'); i.type=t==='datetime'?'datetime-local':t; set(i); i.id='f_'+fd.id; return i; }
+  if(t==='textarea'){ const ta=document.createElement('textarea'); set(ta); ta.id='f_'+fd.id; return ta; }
+  if(t==='file'){ const i=document.createElement('input'); i.type='file'; i.id='f_'+fd.id; return i; }
+  if(t==='range'){ const wrap=document.createElement('div'); wrap.style.display='flex'; wrap.style.gap='8px'; const s=document.createElement('input'); s.type='range'; if(fd.min) s.min=fd.min; if(fd.max) s.max=fd.max; if(fd.step) s.step=fd.step; const out=document.createElement('span'); out.className='hint'; s.value=fd.default||s.min||0; out.textContent=s.value; s.oninput=()=>out.textContent=s.value; wrap.append(s,out); return wrap; }
+  if(t==='dropdown' || t==='multiselect'){ const sel=document.createElement('select'); if(t==='multiselect') sel.multiple=true; (fd.options||[]).forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o); }); sel.id='f_'+fd.id; return sel; }
+  if(t==='radio' || t==='checkboxes'){ const row=document.createElement('div'); row.className='choice-row'; (fd.options||[]).forEach(opt=>{ const lab=document.createElement('label'); lab.className='choice'; const inp=document.createElement('input'); inp.type=(t==='radio')?'radio':'checkbox'; inp.name='f_'+fd.id; inp.value=opt; const txt=document.createElement('span'); txt.textContent=opt; lab.append(inp,txt); row.appendChild(lab); }); return row; }
+  if(t==='toggle'){ const lab=document.createElement('label'); lab.style.display='flex'; lab.style.gap='8px'; const inp=document.createElement('input'); inp.type='checkbox'; if(String(fd.default)==='true') inp.checked=true; lab.append(inp, document.createTextNode(fd.placeholder||'')); return lab; }
+  const i=document.createElement('input'); i.type='text'; set(i); i.id='f_'+fd.id; return i;
+}
+
+/* =============== Inspector (Basics · Validation · Visibility) =============== */
+const insp=$('#inspector'), inspTitle=$('#inspTitle'), inspBody=$('#inspBody'), inspTabs=$('#inspTabs');
+const inspClose=$('#inspClose'), inspDone=$('#inspDone'), inspUp=$('#inspUp'), inspDown=$('#inspDown'), inspDup=$('#inspDup'), inspDel=$('#inspDel');
+inspClose.onclick=()=>insp.classList.remove('open'); inspDone.onclick=()=>insp.classList.remove('open');
+
+function openInspector(id){
+  if(demoMode) return;
+  const item=getItem(); if(!item) return;
+  function find(root,id,p=null){ if(root.id===id) return {node:root,parent:p}; if(root.type==='section'){ for(const c of root.children){ const r=find(c,id,root); if(r) return r; } } return null; }
+  const hit=find(item.root,id); if(!hit) return; const node=hit.node;
+  selectedNodeId=id; highlightSelected();
+
+  inspTitle.textContent = node.type==='field'?'Field':node.type==='section'?'Section':'Divider';
+  inspTabs.innerHTML=''; inspBody.innerHTML='';
+
+  const tabs = node.type==='field'
+    ? [{key:'basics',label:'Basics'},{key:'validation',label:'Validation'},{key:'visibility',label:'Visibility'}]
+    : [{key:'basics',label:'Basics'}];
+
+  tabs.forEach((t,i)=>{
+    const b=document.createElement('button'); b.className='insp-tab'+(i===0?' active':''); b.textContent=t.label; b.onclick=()=>{ $$('.insp-tab',inspTabs).forEach(x=>x.classList.remove('active')); b.classList.add('active'); paintInspectorPane(t.key,node,hit); };
+    inspTabs.appendChild(b);
+  });
+  insp.classList.add('open');
+  paintInspectorPane(tabs[0].key,node,hit);
+
+  // actions
+  inspDel.onclick=()=>{ if(demoMode) return; if(!confirm('Delete this item?')) return; if(!hit.parent) return; hit.parent.children = hit.parent.children.filter(x=>x.id!==node.id); render(); insp.classList.remove('open'); };
+  inspDup.onclick=()=>{ if(demoMode) return; const copy=JSON.parse(JSON.stringify(node)); (function ids(n){ n.id=uid(); if(n.children) n.children.forEach(ids); })(copy); hit.parent.children.splice(hit.parent.children.indexOf(node)+1,0,copy); render(); };
+  inspUp.onclick=()=>{ if(demoMode) return; const idx=hit.parent.children.indexOf(node); if(idx>0){ [hit.parent.children[idx-1],hit.parent.children[idx]]=[hit.parent.children[idx],hit.parent.children[idx-1]]; render(); } };
+  inspDown.onclick=()=>{ if(demoMode) return; const idx=hit.parent.children.indexOf(node); if(idx<hit.parent.children.length-1){ [hit.parent.children[idx+1],hit.parent.children[idx]]=[hit.parent.children[idx],hit.parent.children[idx+1]]; render(); } };
+}
+function highlightSelected(){ $$('.fcard,.section').forEach(el=> el.classList.toggle('selected', el.dataset.nid===selectedNodeId)); }
+
+function paintInspectorPane(which,node,hit){
+  inspBody.innerHTML='';
+  if(which==='basics'){
+    if(node.type==='field'){
+      inspBody.append(row('Label', input(node.name,v=>{node.name=v; render(); openInspector(node.id);})));
+      inspBody.append(row('Type', select(['text','textarea','number','email','tel','url','password','date','time','datetime','color','dropdown','multiselect','radio','checkboxes','toggle','range','file','rating','button'], node.ftype, v=>{node.ftype=v; if(['dropdown','multiselect','radio','checkboxes'].includes(v) && (!node.options||!node.options.length)) node.options=['Option 1','Option 2','Option 3']; render(); openInspector(node.id);})));
+      if(['dropdown','multiselect','radio','checkboxes'].includes(node.ftype)){
+        const ta=document.createElement('textarea'); ta.className='textarea'; ta.style.height='120px'; ta.placeholder='One option per line'; ta.value=(node.options||[]).join('\n');
+        ta.oninput=()=>{ node.options = ta.value.split('\n').map(s=>s.trim()).filter(Boolean); render(); };
+        const inline=checkbox('Inline choices', node.inlineChoices||false, v=>{ node.inlineChoices=v; render();});
+        const allowC=checkbox('Allow user to enter custom option', node.allowCustom||false, v=>{ node.allowCustom=v; render();});
+        inspBody.append(row('Options', ta), row('Display', wrap(inline, allowC)));
+      }
+      inspBody.append(row('Placeholder', input(node.placeholder||'',v=>{node.placeholder=v; render();})));
+      inspBody.append(row('Help text', input(node.help||'',v=>{node.help=v; render();})));
+      inspBody.append(row('Label position', select(['left','top','hidden'], node.labelPos||'left', v=>{node.labelPos=v; render();})));
+      inspBody.append(row('Span (1-4 cols)', num(node.span||2,v=>{node.span=Math.max(1,Math.min(4,Number(v)||1)); render();})));
+      if(node.ftype==='button'){
+        inspBody.append(row('Button style', select(['primary','ghost','danger','linklike'], node.btnStyle||'primary', v=>{node.btnStyle=v; render();})));
+        inspBody.append(row('Button action', select(['none','submit','reset'], node.btnAction||'none', v=>{node.btnAction=v; render();})));
+      }
+    } else if(node.type==='section'){
+      inspBody.append(row('Title', input(node.name,v=>{node.name=v; render(); openInspector(node.id);})));
+      const area=document.createElement('textarea'); area.className='textarea'; area.value=node.description||''; area.oninput=()=>{node.description=area.value; render();};
+      inspBody.append(row('Description', area));
+      inspBody.append(row('Span (1-4 cols)', num(node.span||4,v=>{node.span=Math.max(1,Math.min(4,Number(v)||4)); render();})));
+    } else {
+      const chk=document.createElement('input'); chk.type='checkbox'; chk.checked=node.showLine; chk.onchange=()=>{node.showLine=chk.checked; render();};
+      inspBody.append(row('Show line', wrap(chk)));
+    }
+  }
+
+  if(which==='validation' && node.type==='field'){
+    const req=checkbox('Required', !!node.required, v=>{node.required=v; render();});
+    const ro =checkbox('Read-only', !!node.readonly, v=>{node.readonly=v; render();});
+    const dis=checkbox('Disabled', !!node.disabled, v=>{node.disabled=v; render();});
+    inspBody.append(row('Flags', wrap(req,ro,dis)));
+    inspBody.append(row('Min', input(node.min||'',v=>{node.min=v; render();})));
+    inspBody.append(row('Max', input(node.max||'',v=>{node.max=v; render();})));
+    inspBody.append(row('Step', input(node.step||'',v=>{node.step=v; render();})));
+    inspBody.append(row('Min length', input(node.minLen||'',v=>{node.minLen=v; render();})));
+    inspBody.append(row('Max length', input(node.maxLen||'',v=>{node.maxLen=v; render();})));
+    inspBody.append(row('Regex pattern', input(node.pattern||'',v=>{node.pattern=v; render();})));
+    const defLbl = ['radio','checkboxes','toggle','range','rating'].includes(node.ftype) ? 'Default (see field)' : 'Default value';
+    inspBody.append(row(defLbl, input(node.default||'',v=>{node.default=v; render();})));
+  }
+
+  if(which==='visibility' && node.type==='field'){
+    const modeSel=select(['all','any'], node.logic?.mode||'all', v=>{node.logic.mode=v; updateVisibility();});
+    inspBody.append(row('Match conditions', wrap(newChip('Show when'),modeSel,newChip('conditions are true'))));
+    const list=document.createElement('div'); list.style.display='grid'; list.style.gap='8px';
+    const fields = allFieldsExcept(node.id).map(f=>({id:f.id,label:f.name,type:f.ftype}));
+    const opsFor = (t)=> (t==='number'||t==='date'||t==='time'||t==='datetime') ? ['=','!=','>','<','contains','notcontains']
+                 : (t==='checkboxes'||t==='multiselect'||t==='radio'||t==='dropdown') ? ['=','!=','contains','notcontains']
+                 : ['=','!=','contains','notcontains','>','<'];
+    node.logic = node.logic || {mode:'all',conditions:[]};
+    node.logic.conditions = node.logic.conditions || [];
+    node.logic.conditions.forEach((c,idx)=>{
+      const rowEl=document.createElement('div'); rowEl.className='inline'; rowEl.style.flexWrap='wrap';
+      const fSel=document.createElement('select'); fSel.className='select'; fSel.style.minWidth='160px';
+      fields.forEach(fi=>{ const op=document.createElement('option'); op.value=fi.id; op.textContent=fi.label; fSel.appendChild(op); });
+      fSel.value=c.field||'';
+      const oSel=document.createElement('select'); oSel.className='select';
+      const ftype=(fields.find(f=>f.id===fSel.value)?.type)||'text';
+      opsFor(ftype).forEach(o=>{ const op=document.createElement('option'); op.value=o; op.textContent=o; oSel.appendChild(op); });
+      oSel.value=c.op||'=';
+      const vInp=document.createElement('input'); vInp.className='input'; vInp.placeholder='Value';
+      vInp.value=(c.value??'');
+      const del=document.createElement('button'); del.className='btn ghost'; del.textContent='Remove';
+      del.onclick=()=>{ node.logic.conditions.splice(idx,1); paintInspectorPane('visibility',node,hit); updateVisibility(); };
+      fSel.onchange=()=>{ c.field=fSel.value; c.op=oSel.value; c.value=vInp.value; paintInspectorPane('visibility',node,hit); updateVisibility(); };
+      oSel.onchange=()=>{ c.op=oSel.value; updateVisibility(); };
+      vInp.oninput=()=>{ c.value=vInp.value; updateVisibility(); };
+      rowEl.append(fSel,oSel,vInp,del); list.appendChild(rowEl);
+    });
+    inspBody.append(list);
+    const addBtn=document.createElement('button'); addBtn.className='btn primary'; addBtn.textContent='＋ Add condition';
+    addBtn.onclick=()=>{ node.logic.conditions.push({field:fields[0]?.id||'', op:'=', value:''}); paintInspectorPane('visibility',node,hit); updateVisibility(); };
+    inspBody.append(addBtn);
+  }
+}
+
+/* Inspector helpers */
+function row(lbl, el){ const r=document.createElement('div'); r.className='insp-row'; const l=document.createElement('div'); l.className='label'; l.textContent=lbl; r.append(l,el); return r; }
+function input(val,on){ const i=document.createElement('input'); i.className='input'; i.value=val??''; i.oninput=()=>on(i.value); return i; }
+function num(val,on){ const i=document.createElement('input'); i.className='input'; i.type='number'; i.value=val??''; i.oninput=()=>on(i.value); return i; }
+function select(opts,val,on){ const s=document.createElement('select'); s.className='select'; opts.forEach(o=>{ const op=document.createElement('option'); op.value=o; op.textContent=o; s.appendChild(op);}); s.value=val; s.onchange=()=>on(s.value); return s; }
+function checkbox(label,checked,on){ const w=document.createElement('label'); w.className='inline'; const c=document.createElement('input'); c.type='checkbox'; c.checked=!!checked; c.onchange=()=>on(c.checked); const t=document.createElement('span'); t.textContent=' '+label; w.append(c,t); return w; }
+function wrap(...els){ const d=document.createElement('div'); d.className='inline'; els.forEach(e=>d.appendChild(e)); return d; }
+function newChip(txt){ const c=document.createElement('span'); c.className='chip'; c.textContent=txt; return c; }
+
+/* Field listing for conditions (exclude self) */
+function allFieldsExcept(excludeId){
+  const item=getItem(); const out=[];
+  (function walk(n){ if(n.type==='field' && n.id!==excludeId) out.push(n); if(n.type==='section') n.children.forEach(walk); })(item.root);
+  return out;
+}
+
+/* Section helpers */
+function sectionById(id){ const it=getItem(); let hit=null; (function walk(n){ if(n.id===id){ hit=n; return; } if(n.type==='section') n.children.forEach(walk); })(it.root); return hit; }
+function setTarget(id){ const sec=sectionById(id); if(sec){ targetSectionId=id; render(); openInspector(id); } }
+function addFieldInto(secId){ if(demoMode) return; const sec=sectionById(secId); if(!sec) return; const name=($('#fieldName').value||'').trim() || 'Field'; const ft=$('#fieldType').value||'text'; const n=field(ft,name); sec.children.push(n); $('#fieldName').value=''; render(); openInspector(n.id); }
+function addSubsectionInto(secId){ if(demoMode) return; const sec=sectionById(secId); if(!sec) return; const n={id:uid(),type:'section',name:'Section',description:'',span:4,children:[]}; sec.children.push(n); render(); openInspector(n.id); }
+function addDividerInto(secId){ if(demoMode) return; const sec=sectionById(secId); if(!sec) return; sec.children.push(divider()); render(); }
+function deleteNode(id){
+  if(demoMode) return; const it=getItem(); if(!it) return;
+  function find(root,id,p=null){ if(root.id===id) return {node:root,parent:p}; if(root.type==='section'){ for(const c of root.children){ const r=find(c,id,root); if(r) return r; } } return null; }
+  const hit=find(it.root,id); if(!hit||!hit.parent) return; if(!confirm('Delete this item?')) return;
+  hit.parent.children = hit.parent.children.filter(c=>c.id!==id); render(); closeInspector();
+}
+function closeInspector(){ insp.classList.remove('open'); }
+
+/* ================= Visibility engine ================= */
+function getFieldValueById(fid){
+  const el=document.getElementById('f_'+fid);
+  const item=getItem(); let node=null; (function find(n){ if(n.id===fid){ node=n; return; } if(n.type==='section') n.children.forEach(find); })(item.root);
+  if(!node) return '';
+  const t=node.ftype;
+  if(!el){
+    if(t==='radio'){ const nodes=$$('input[name="f_'+fid+'"]'); const y=nodes.find(n=>n.checked); return y?y.value:''; }
+    if(t==='checkboxes'){ const nodes=$$('input[name="f_'+fid+'"]'); return nodes.filter(n=>n.checked).map(n=>n.value); }
+    if(t==='toggle'){ return String(node.default)==='true'; }
+    return node.default||'';
+  }
+  if(t==='multiselect'){ return Array.from(el.selectedOptions).map(o=>o.value); }
+  if(t==='file'){ return el.files?.length? el.files[0].name : ''; }
+  return el.value??'';
+}
+function testCondition(c){
+  if(!c||!c.field) return true;
+  const cur=getFieldValueById(c.field), v=c.value??'', op=c.op||'=';
+  if(op==='=') return Array.isArray(cur)? cur.includes(v): String(cur)===String(v);
+  if(op==='!=') return Array.isArray(cur)? !cur.includes(v): String(cur)!==String(v);
+  if(op==='contains') return Array.isArray(cur)? cur.includes(v): String(cur).toLowerCase().includes(String(v).toLowerCase());
+  if(op==='notcontains') return Array.isArray(cur)? !cur.includes(v): !String(cur).toLowerCase().includes(String(v).toLowerCase());
+  if(op==='>'||op==='<'){
+    const na=parseFloat(cur), nb=parseFloat(v);
+    if(!Number.isNaN(na)&&!Number.isNaN(nb)) return op==='>'?na>nb:na<nb;
+    return op==='>'? String(cur)>String(v) : String(cur)<String(v);
+  }
+  return true;
+}
+function passesLogic(n){
+  const lg=n.logic||{mode:'all',conditions:[]};
+  if(!lg.conditions||lg.conditions.length===0) return true;
+  const res=lg.conditions.map(testCondition);
+  return (lg.mode==='any')? res.some(Boolean): res.every(Boolean);
+}
+function updateVisibility(){
+  const item=getItem(); if(!item) return;
+  (function walk(n){
+    if(n.type==='field'){
+      const card=document.querySelector(`.fcard[data-nid="${n.id}"]`);
+      if(card) card.style.display = passesLogic(n)? '' : 'none';
+    }
+    if(n.type==='section') n.children.forEach(walk);
+  })(item.root);
+}
+
+/* Submit & Reset */
+function doSubmit(){
+  const item=getItem(); if(!item) return true; let ok=true;
+  (function walk(n){
+    if(n.type==='field'){
+      const card=document.querySelector(`.fcard[data-nid="${n.id}"]`);
+      if(card && card.style.display==='none') return;
+      const old=card?.querySelector('.error'); if(old) old.remove();
+      const val=getFieldValueById(n.id); let msg='';
+      if(n.required){ if((Array.isArray(val)&&!val.length)||(!Array.isArray(val)&&String(val).trim()==='')) msg='This field is required.'; }
+      if(!msg && n.pattern){ try{const re=new RegExp(n.pattern); if(!re.test(String(val))) msg='Does not match required format.';}catch{} }
+      if(!msg && n.min && n.ftype==='number'){ if(Number(val)<Number(n.min)) msg=`Must be ≥ ${n.min}.`; }
+      if(!msg && n.max && n.ftype==='number'){ if(Number(val)>Number(n.max)) msg=`Must be ≤ ${n.max}.`; }
+      if(msg && card){ const d=document.createElement('div'); d.className='error'; d.style.color='#b91c1c'; d.style.fontSize='12px'; d.textContent=msg; card.appendChild(d); ok=false; }
+    }
+    if(n.type==='section') n.children.forEach(walk);
+  })(item.root);
+  formNote.textContent = ok? '✅ Submitted (demo).' : '⚠️ Please fix the highlighted issues.';
+  return ok;
+}
+function doReset(){
+  $('#designerCard').querySelectorAll('input,textarea,select').forEach(el=>{
+    if(el.type==='checkbox'||el.type==='radio'){ el.checked=false; }
+    else if(el.tagName==='SELECT' && el.multiple){ Array.from(el.options).forEach(o=>o.selected=false); }
+    else { el.value=''; }
+  });
+  $$('.error').forEach(e=>e.remove());
+  formNote.textContent='↺ Cleared.';
+  updateVisibility();
+}
+$('#formSubmit').onclick=()=>doSubmit(); $('#formReset').onclick=()=>doReset();
+
+/* ================= INIT ================= */
+(function init(){
+  const f1={id:uid(),name:'Feature One',place:'h',icon:'➕',children:[],root:defaultRootSection('Feature One')};
+  const f2={id:uid(),name:'Feature Two',place:'v',icon:'📁',children:[],root:defaultRootSection('Feature Two')};
+  const sub={id:uid(),name:'Upload',place:'h',icon:'▶️',children:[],root:defaultRootSection('Upload')};
+  const sub2={id:uid(),name:'Go Live',place:'h',icon:'📡',children:[],root:defaultRootSection('Go Live')};
+  const sub3={id:uid(),name:'Create Post',place:'h',icon:'✏️',children:[],root:defaultRootSection('Create Post')};
+  f1.children.push(sub,sub2,sub3);
+
+  Model.items.push(f1,f2);
+  renderMenus(); openDesigner(f1);
+})();
+
+/* ================= SIDE TOGGLE + RESIZE ================= */
+$('#toggleSideBtn').onclick=()=> document.body.classList.toggle('side-open');
+let __r; window.addEventListener('resize',()=>{ clearTimeout(__r); __r=setTimeout(()=>render(),120); });
+
+/* ================== LOGO PICKER ================== */
+const logoPicker=$('#logoPicker'), lpGrid=$('#lpGrid'), lpClose=$('#lpClose'), lpAuto=$('#lpAuto'), lpReset=$('#lpReset');
+const GENERIC_LOGOS = [
+  // Abstract wave
+  `<svg viewBox="0 0 64 64" role="img" aria-label="Abstract wave">
+     <defs><linearGradient id="lg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2563eb"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs>
+     <rect x="4" y="4" width="56" height="56" rx="14" fill="#0ea5e9" opacity=".08"/>
+     <path d="M6,40 Q18,20 32,28 T58,28 L58,58 L6,58 Z" fill="url(#lg1)"/>
+   </svg>`,
+  // Spark
+  `<svg viewBox="0 0 64 64" role="img" aria-label="Spark">
+     <defs><linearGradient id="lg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c3aed"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs>
+     <rect x="4" y="4" width="56" height="56" rx="14" fill="#7c3aed" opacity=".06"/>
+     <g fill="url(#lg2)"><circle cx="32" cy="16" r="6"/><circle cx="20" cy="34" r="5"/><circle cx="44" cy="34" r="5"/><circle cx="32" cy="48" r="6"/></g>
+   </svg>`,
+  // Shield
+  `<svg viewBox="0 0 64 64" role="img" aria-label="Shield">
+     <defs><linearGradient id="lg3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22c55e"/><stop offset="1" stop-color="#16a34a"/></linearGradient></defs>
+     <rect x="4" y="4" width="56" height="56" rx="14" fill="#16a34a" opacity=".08"/>
+     <path d="M32 10 L50 16 V30c0 10-7 18-18 22C21 48 14 40 14 30V16z" fill="url(#lg3)"/>
+   </svg>`,
+  // Hex
+  `<svg viewBox="0 0 64 64" role="img" aria-label="Hex">
+     <defs><linearGradient id="lg4" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f59e0b"/><stop offset="1" stop-color="#ef4444"/></linearGradient></defs>
+     <rect x="4" y="4" width="56" height="56" rx="14" fill="#f59e0b" opacity=".09"/>
+     <path d="M32 10l16 10v24L32 54 16 44V20z" fill="url(#lg4)"/>
+   </svg>`,
+  // Orbit
+  `<svg viewBox="0 0 64 64" role="img" aria-label="Orbit">
+     <defs><linearGradient id="lg5" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#06b6d4"/><stop offset="1" stop-color="#3b82f6"/></linearGradient></defs>
+     <rect x="4" y="4" width="56" height="56" rx="14" fill="#3b82f6" opacity=".06"/>
+     <circle cx="32" cy="32" r="10" fill="url(#lg5)"/><ellipse cx="32" cy="32" rx="22" ry="10" fill="none" stroke="#60a5fa" stroke-width="3"/>
+   </svg>`,
+  // Leaf
+  `<svg viewBox="0 0 64 64" role="img" aria-label="Leaf">
+     <defs><linearGradient id="lg6" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#10b981"/><stop offset="1" stop-color="#34d399"/></linearGradient></defs>
+     <rect x="4" y="4" width="56" height="56" rx="14" fill="#10b981" opacity=".07"/>
+     <path d="M14 38c10 2 26-10 36-24 2 20-12 34-26 36-4-2-8-6-10-12z" fill="url(#lg6)"/>
+   </svg>`,
+  // Stack
+  `<svg viewBox="0 0 64 64" role="img" aria-label="Stack">
+     <defs><linearGradient id="lg7" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#06b6d4"/><stop offset="1" stop-color="#7c3aed"/></linearGradient></defs>
+     <rect x="4" y="4" width="56" height="56" rx="14" fill="#0ea5e9" opacity=".08"/>
+     <g fill="url(#lg7)"><rect x="14" y="14" width="36" height="8" rx="3"/><rect x="14" y="28" width="36" height="8" rx="3"/><rect x="14" y="42" width="36" height="8" rx="3"/></g>
+   </svg>`,
+  // Pulse
+  `<svg viewBox="0 0 64 64" role="img" aria-label="Pulse">
+     <defs><linearGradient id="lg8" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ef4444"/><stop offset="1" stop-color="#f97316"/></linearGradient></defs>
+     <rect x="4" y="4" width="56" height="56" rx="14" fill="#ef4444" opacity=".07"/>
+     <polyline points="10,34 22,34 28,20 36,48 42,30 54,30" fill="none" stroke="url(#lg8)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+   </svg>`
+];
+function openLogoPicker(){
+  lpGrid.innerHTML='';
+  GENERIC_LOGOS.forEach((svg,i)=>{
+    const card=document.createElement('button'); card.type='button'; card.className='lp-item';
+    card.innerHTML=svg+'<div class="hint">Generic '+(i+1)+'</div>';
+    card.onclick=()=>{ logoBox.innerHTML=svg; saveBrand(); closeLogoPicker(); };
+    lpGrid.appendChild(card);
+  });
+  logoPicker.classList.add('open');
+}
+function closeLogoPicker(){ logoPicker.classList.remove('open'); }
+lpClose.onclick=closeLogoPicker;
+lpAuto.onclick=()=>{ renderAutoInitials(); saveBrand(); closeLogoPicker(); };
+lpReset.onclick=()=>{ // minimal gradient square
+  logoBox.innerHTML = `
+    <svg viewBox="0 0 64 64" aria-hidden="true">
+      <defs><linearGradient id="g0" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2563eb"/><stop offset="1" stop-color="#7c3aed"/></linearGradient></defs>
+      <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#g0)"/>
+    </svg>`;
+  saveBrand(); closeLogoPicker();
+};
+logoPicker.addEventListener('click',(e)=>{ if(e.target===logoPicker) closeLogoPicker(); });
+document.addEventListener('keydown',(e)=>{ if(e.key==='Escape') closeLogoPicker(); });
+</script>
+</body>
+</html>
