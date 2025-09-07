@@ -27,6 +27,7 @@
   .logo{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(135deg,var(--primary),#7c3aed);color:#fff;font-weight:900;cursor:pointer;border:1px solid #c7d2fe;box-shadow:var(--shadow)}
   .brand-name[contenteditable="true"]{outline:none;border-radius:8px;padding:3px 6px}
   .brand-name[contenteditable="true"]:focus{box-shadow:0 0 0 2px #bfdbfe;background:#eff6ff}
+  .brand-name[contenteditable="false"]{cursor:default}
   .menu-btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 10px;font-weight:800;cursor:pointer;display:none}
   .grow{flex:1}
 
@@ -135,9 +136,13 @@
   .insp-btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 10px;cursor:pointer}
   .insp-btn.primary{background:linear-gradient(135deg,#60a5fa,#22d3ee);border-color:#bae6fd}
 
-  /* Demo mode hides editing chrome (not the logo visuals) */
-  body.demo-mode .inspector, body.demo-mode #builderToolbar, body.demo-mode .section-toolbar,
-  body.demo-mode .adder-pop { display:none !important }
+  /* DEMO MODE: hide/lock ALL editing affordances (visual lock) */
+  body.demo-mode .inspector,
+  body.demo-mode #builderToolbar,
+  body.demo-mode .section-toolbar,
+  body.demo-mode .adder-pop,
+  body.demo-mode .field-icons { display:none !important }
+  /* Keep logo visible, just block by logic; keep navs visible */
 
   /* Logo Picker – refined */
   .logo-picker{position:fixed;inset:0;background:rgba(15,23,42,.35);display:none;align-items:center;justify-content:center;z-index:150}
@@ -184,7 +189,7 @@
         <div class="hribbon" id="hRibbon" role="menubar" aria-label="Features"></div>
         <button class="hbtn" id="hNext" title="Scroll right" hidden>›</button>
 
-        <!-- Add horizontal item (refined) -->
+        <!-- Add horizontal item -->
         <div class="adder-pop" id="hAdder">
           <button type="button" aria-haspopup="true" aria-expanded="false">＋ Add</button>
           <div class="panel">
@@ -224,7 +229,7 @@
 
       <ul id="vNav" class="vnav"></ul>
 
-      <!-- Add vertical item (refined) -->
+      <!-- Add vertical item -->
       <div class="adder-pop" id="vAdder" style="margin-top:10px">
         <button type="button">＋ Add vertical item</button>
         <div class="panel">
@@ -336,8 +341,20 @@
 <script>
 /* ================= MODE ================= */
 let demoMode=false; const modeEditBtn=document.getElementById('modeEdit'), modeDemoBtn=document.getElementById('modeDemo');
-function applyMode(){ document.body.classList.toggle('demo-mode', demoMode); modeEditBtn.classList.toggle('active', !demoMode); modeDemoBtn.classList.toggle('active', demoMode); localStorage.setItem('hrsuite_demo', demoMode?'1':'0'); if(demoMode) closeInspector(); }
-modeEditBtn.onclick=()=>{ demoMode=false; applyMode(); }; modeDemoBtn.onclick=()=>{ demoMode=true; applyMode(); };
+function applyMode(){
+  document.body.classList.toggle('demo-mode', demoMode);
+  modeEditBtn.classList.toggle('active', !demoMode);
+  modeDemoBtn.classList.toggle('active', demoMode);
+  // lock inline title edit
+  const siteNameEl=document.getElementById('siteName');
+  siteNameEl.setAttribute('contenteditable', demoMode ? 'false' : 'true');
+  siteNameEl.title = demoMode ? 'Demo mode: editing disabled' : 'Click to edit';
+  // persist
+  localStorage.setItem('hrsuite_demo', demoMode?'1':'0');
+  if(demoMode) closeInspector();
+}
+modeEditBtn.onclick=()=>{ demoMode=false; applyMode(); };
+modeDemoBtn.onclick=()=>{ demoMode=true; applyMode(); };
 document.addEventListener('keydown',e=>{ if(e.shiftKey && e.key.toLowerCase()==='d'){ demoMode=!demoMode; applyMode(); }});
 (function(){ demoMode = localStorage.getItem('hrsuite_demo')==='1'; applyMode(); })();
 
@@ -346,14 +363,14 @@ const $=(s,d=document)=>d.querySelector(s), $$=(s,d=document)=>Array.from(d.quer
 const uid=()=>Math.random().toString(36).slice(2,10);
 function toast(msg){ const t=$('#appToast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1800); }
 
-/* ================= SITE NAME (inline editable) + LOGO ================= */
+/* ================= SITE NAME + LOGO ================= */
 const siteNameEl=$('#siteName'), logoBox=$('#logoBox');
 function getInitials(name){ return (name||'').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase() || 'WN'; }
 function svgAutoInitials(name){
   const initials=getInitials(name);
   return `
     <svg viewBox="0 0 64 64" aria-hidden="true">
-      <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2563eb"/><stop offset="1" stop-color="#7c3aed"/></linearGradient></defs>
+      <defs><linearGradient id="g" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#2563eb"/><stop offset="1" stop-color="#7c3aed"/></linearGradient></defs>
       <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#g)"/>
       <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" font-size="26" font-weight="800" fill="#fff" font-family="ui-sans-serif,system-ui,Segoe UI,Roboto">${initials}</text>
     </svg>`;
@@ -364,25 +381,25 @@ function loadBrand(){
   const n=localStorage.getItem('site_name'); if(n){ siteNameEl.textContent=n; document.title=n+' · Designer'; }
   const h=localStorage.getItem('site_logo_html'); if(h){ logoBox.innerHTML=h; } else { renderAutoInitials(); }
 }
-siteNameEl.addEventListener('input', ()=>{ renderAutoInitials(); saveBrand(); });
-siteNameEl.addEventListener('blur', saveBrand);
+siteNameEl.addEventListener('input', ()=>{ if(demoMode) return; renderAutoInitials(); saveBrand(); });
+siteNameEl.addEventListener('blur', ()=>{ if(demoMode) return; saveBrand(); });
 
-/* ================= Logo picker (not disabled — blocked by logic in demo) ================= */
+/* ================= Logo picker (blocked softly in demo) ================= */
 const logoPicker=$('#logoPicker'), lpGrid=$('#lpGrid'), lpClose=$('#lpClose'), lpAuto=$('#lpAuto'), lpReset=$('#lpReset'), lpBig=$('#lpBig'), lpSearch=$('#lpSearch'), lpUse=$('#lpUse');
 let lpSelectedIndex=0;
 const GENERIC_LOGOS = [
-  `<svg viewBox="0 0 64 64"><defs><linearGradient id="lg1" x1="0" y="0" x2="1" y2="1"><stop offset="0" stop-color="#2563eb"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#0ea5e9" opacity=".08"/><path d="M6,40 Q18,20 32,28 T58,28 L58,58 L6,58 Z" fill="url(#lg1)"/></svg>`,
-  `<svg viewBox="0 0 64 64"><defs><linearGradient id="lg2" x1="0" y="0" x2="1" y2="1"><stop offset="0" stop-color="#7c3aed"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#7c3aed" opacity=".06"/><g fill="url(#lg2)"><circle cx="32" cy="16" r="6"/><circle cx="20" cy="34" r="5"/><circle cx="44" cy="34" r="5"/><circle cx="32" cy="48" r="6"/></g></svg>`,
-  `<svg viewBox="0 0 64 64"><defs><linearGradient id="lg3" x1="0" y="0" x2="1" y2="1"><stop offset="0" stop-color="#22c55e"/><stop offset="1" stop-color="#16a34a"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#16a34a" opacity=".08"/><path d="M32 10 L50 16 V30c0 10-7 18-18 22C21 48 14 40 14 30V16z" fill="url(#lg3)"/></svg>`,
-  `<svg viewBox="0 0 64 64"><defs><linearGradient id="lg4" x1="0" y="0" x2="1" y2="1"><stop offset="0" stop-color="#f59e0b"/><stop offset="1" stop-color="#ef4444"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#f59e0b" opacity=".09"/><path d="M32 10l16 10v24L32 54 16 44V20z" fill="url(#lg4)"/></svg>`,
-  `<svg viewBox="0 0 64 64"><defs><linearGradient id="lg5" x1="0" y="0" x2="1" y2="1"><stop offset="0" stop-color="#06b6d4"/><stop offset="1" stop-color="#3b82f6"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#3b82f6" opacity=".06"/><circle cx="32" cy="32" r="10" fill="url(#lg5)"/><ellipse cx="32" cy="32" rx="22" ry="10" fill="none" stroke="#60a5fa" stroke-width="3"/></svg>`,
-  `<svg viewBox="0 0 64 64"><defs><linearGradient id="lg6" x1="0" y="0" x2="1" y2="1"><stop offset="0" stop-color="#10b981"/><stop offset="1" stop-color="#34d399"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#10b981" opacity=".07"/><path d="M14 38c10 2 26-10 36-24 2 20-12 34-26 36-4-2-8-6-10-12z" fill="url(#lg6)"/></svg>`,
-  `<svg viewBox="0 0 64 64"><defs><linearGradient id="lg7" x1="0" y="0" x2="1" y2="1"><stop offset="0" stop-color="#06b6d4"/><stop offset="1" stop-color="#7c3aed"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#0ea5e9" opacity=".08"/><g fill="url(#lg7)"><rect x="14" y="14" width="36" height="8" rx="3"/><rect x="14" y="28" width="36" height="8" rx="3"/><rect x="14" y="42" width="36" height="8" rx="3"/></g></svg>`,
-  `<svg viewBox="0 0 64 64"><defs><linearGradient id="lg8" x1="0" y="0" x2="1" y2="1"><stop offset="0" stop-color="#ef4444"/><stop offset="1" stop-color="#f97316"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#ef4444" opacity=".07"/><polyline points="10,34 22,34 28,20 36,48 42,30 54,30" fill="none" stroke="url(#lg8)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+  `<svg viewBox="0 0 64 64"><defs><linearGradient id="lg1" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#2563eb"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#0ea5e9" opacity=".08"/><path d="M6,40 Q18,20 32,28 T58,28 L58,58 L6,58 Z" fill="url(#lg1)"/></svg>`,
+  `<svg viewBox="0 0 64 64"><defs><linearGradient id="lg2" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#7c3aed"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#7c3aed" opacity=".06"/><g fill="url(#lg2)"><circle cx="32" cy="16" r="6"/><circle cx="20" cy="34" r="5"/><circle cx="44" cy="34" r="5"/><circle cx="32" cy="48" r="6"/></g></svg>`,
+  `<svg viewBox="0 0 64 64"><defs><linearGradient id="lg3" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#22c55e"/><stop offset="1" stop-color="#16a34a"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#16a34a" opacity=".08"/><path d="M32 10 L50 16 V30c0 10-7 18-18 22C21 48 14 40 14 30V16z" fill="url(#lg3)"/></svg>`,
+  `<svg viewBox="0 0 64 64"><defs><linearGradient id="lg4" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#f59e0b"/><stop offset="1" stop-color="#ef4444"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#f59e0b" opacity=".09"/><path d="M32 10l16 10v24L32 54 16 44V20z" fill="url(#lg4)"/></svg>`,
+  `<svg viewBox="0 0 64 64"><defs><linearGradient id="lg5" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#06b6d4"/><stop offset="1" stop-color="#3b82f6"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#3b82f6" opacity=".06"/><circle cx="32" cy="32" r="10" fill="url(#lg5)"/><ellipse cx="32" cy="32" rx="22" ry="10" fill="none" stroke="#60a5fa" stroke-width="3"/></svg>`,
+  `<svg viewBox="0 0 64 64"><defs><linearGradient id="lg6" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#10b981"/><stop offset="1" stop-color="#34d399"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#10b981" opacity=".07"/><path d="M14 38c10 2 26-10 36-24 2 20-12 34-26 36-4-2-8-6-10-12z" fill="url(#lg6)"/></svg>`,
+  `<svg viewBox="0 0 64 64"><defs><linearGradient id="lg7" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#06b6d4"/><stop offset="1" stop-color="#7c3aed"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#0ea5e9" opacity=".08"/><g fill="url(#lg7)"><rect x="14" y="14" width="36" height="8" rx="3"/><rect x="14" y="28" width="36" height="8" rx="3"/><rect x="14" y="42" width="36" height="8" rx="3"/></g></svg>`,
+  `<svg viewBox="0 0 64 64"><defs><linearGradient id="lg8" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#ef4444"/><stop offset="1" stop-color="#f97316"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#ef4444" opacity=".07"/><polyline points="10,34 22,34 28,20 36,48 42,30 54,30" fill="none" stroke="url(#lg8)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`
 ];
 let filteredLogos=[...GENERIC_LOGOS];
 function openLogoPicker(){
-  if(demoMode){ toast('Demo mode: logo editing is disabled'); return; } // soft block w/ toast
+  if(demoMode){ toast('Demo mode: logo editing is disabled'); return; }
   filteredLogos=[...GENERIC_LOGOS]; lpSelectedIndex=0; paintLogoGrid(); logoPicker.classList.add('open'); lpBig.innerHTML = filteredLogos[0]; lpSearch.value='';
 }
 function closeLogoPicker(){ logoPicker.classList.remove('open'); }
@@ -399,13 +416,13 @@ $('#logoBtn').addEventListener('click', openLogoPicker);
 logoBox.addEventListener('click', openLogoPicker);
 lpClose.onclick=closeLogoPicker;
 lpAuto.onclick=()=>{ if(demoMode){ toast('Demo mode: logo editing is disabled'); return; } lpBig.innerHTML = svgAutoInitials(siteNameEl.textContent.trim()); lpSelectedIndex=-1; };
-lpReset.onclick=()=>{ if(demoMode){ toast('Demo mode: logo editing is disabled'); return; } lpBig.innerHTML = `<svg viewBox="0 0 64 64"><defs><linearGradient id="g0" x1="0" y="0" x2="1" y2="1"><stop offset="0" stop-color="#2563eb"/><stop offset="1" stop-color="#7c3aed"/></linearGradient></defs><rect x="2" y="2" width="60" height="60" rx="14" fill="url(#g0)"/></svg>`; lpSelectedIndex=-2; };
+lpReset.onclick=()=>{ if(demoMode){ toast('Demo mode: logo editing is disabled'); return; } lpBig.innerHTML = `<svg viewBox="0 0 64 64"><defs><linearGradient id="g0" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#2563eb"/><stop offset="1" stop-color="#7c3aed"/></linearGradient></defs><rect x="2" y="2" width="60" height="60" rx="14" fill="url(#g0)"/></svg>`; lpSelectedIndex=-2; };
 lpSearch.oninput=()=>{ const q=lpSearch.value.trim().toLowerCase(); filteredLogos = GENERIC_LOGOS.filter((_,i)=>('generic '+(i+1)).includes(q) || !q); lpSelectedIndex=0; paintLogoGrid(); lpBig.innerHTML=filteredLogos[0]||''; };
 lpUse.onclick=()=>{ if(demoMode){ toast('Demo mode: logo editing is disabled'); return; } logoBox.innerHTML = lpBig.innerHTML; saveBrand(); closeLogoPicker(); };
 loadBrand();
 
 /* ================= MODEL ================= */
-const Model={ items:[] }; // {id,name,place:'h'|'v',icon,children:[],root}
+const Model={ items:[] };
 let current=null, selectedNodeId=null, targetSectionId=null;
 
 /* ================= NAV helpers ================= */
@@ -450,15 +467,13 @@ const hRibbon=$('#hRibbon'), hPrev=$('#hPrev'), hNext=$('#hNext');
 hPrev.onclick=()=>hRibbon.scrollBy({left:-220,behavior:'smooth'}); hNext.onclick=()=>hRibbon.scrollBy({left:220,behavior:'smooth'});
 function checkRibbonOverflow(){ const need = hRibbon.scrollWidth > Math.ceil(hRibbon.clientWidth + 2); hPrev.hidden = hNext.hidden = !need; }
 
-/* build horizontal item: if has children => container only */
+/* build horizontal item: containers only open submenu */
 function buildHItem(node){
   const wrap=document.createElement('div'); wrap.className='h-item'; wrap.dataset.id=node.id; wrap.dataset.place=node.place;
   const hasChildren=(node.children?.length||0)>0;
   const a=document.createElement('a'); a.href='#'; a.className='h-link'; a.innerHTML=`${node.icon?`<span class="h-ico">${node.icon}</span>`:''}<span>${node.name}</span>${hasChildren?'<span class="h-caret">▾</span>':''}`;
   a.onclick=(e)=>{ e.preventDefault(); if(hasChildren){ openFlyMenu(node, a, 'below'); } else { openDesigner(node); } };
-  if(hasChildren){ // mark visually as container
-    const tag=document.createElement('span'); tag.className='container-tag'; tag.textContent='Container'; a.appendChild(tag);
-  }
+  if(hasChildren){ const tag=document.createElement('span'); tag.className='container-tag'; tag.textContent='Container'; a.appendChild(tag); }
   wrap.appendChild(a);
   return wrap;
 }
@@ -479,14 +494,14 @@ function setActive(){
   $$('#vNav .vbtn').forEach(b=> b.classList.toggle('active', b.parentElement.dataset.id===id));
 }
 
-/* ================= ADDERS (refined) ================= */
+/* ================= ADDERS ================= */
 const hAdder=$('#hAdder'), vAdder=$('#vAdder');
 const navNameH=$('#navNameH'), navParentH=$('#navParentH'), iconPreviewH=$('#iconPreviewH'), addNavBtnH=$('#addNavBtnH'), cancelNavH=$('#cancelNavH');
 const navNameV=$('#navNameV'), navParentV=$('#navParentV'), iconPreviewV=$('#iconPreviewV'), addNavBtnV=$('#addNavBtnV'), cancelNavV=$('#cancelNavV');
 
-hAdder.querySelector('button').onclick = (e)=>{ e.stopPropagation(); populateParentSelect('h'); hAdder.classList.toggle('open'); hAdder.querySelector('button').setAttribute('aria-expanded', hAdder.classList.contains('open')?'true':'false'); };
+hAdder.querySelector('button').onclick = (e)=>{ if(demoMode){ toast('Demo mode: editing disabled'); return; } e.stopPropagation(); populateParentSelect('h'); hAdder.classList.toggle('open'); hAdder.querySelector('button').setAttribute('aria-expanded', hAdder.classList.contains('open')?'true':'false'); };
 document.addEventListener('click', e=>{ if(!hAdder.contains(e.target)) { hAdder.classList.remove('open'); hAdder.querySelector('button').setAttribute('aria-expanded','false'); } });
-vAdder.querySelector('button').onclick = ()=>{ vAdder.classList.toggle('open'); populateParentSelect('v'); };
+vAdder.querySelector('button').onclick = ()=>{ if(demoMode){ toast('Demo mode: editing disabled'); return; } vAdder.classList.toggle('open'); populateParentSelect('v'); };
 cancelNavH.onclick=()=>{ hAdder.classList.remove('open'); }; cancelNavV.onclick=()=>{ vAdder.classList.remove('open'); };
 
 function parentChoices(place){
@@ -628,7 +643,7 @@ function renderSection(sec){
   const wrap=document.createElement('div'); wrap.className='section'; wrap.dataset.nid=sec.id;
   const head=document.createElement('div'); head.className='section-title'; head.innerHTML=`<div>${sec.name}</div>`;
   const tools=document.createElement('div'); tools.className='section-toolbar';
-  [['＋ Field',()=>addFieldInto(sec.id)],['＋ Section',()=>addSubsectionInto(sec.id)],['— Divider',()=>addDividerInto(sec.id)],['🎯 Target',()=>setTarget(sec.id)]].forEach(([t,fn])=>{ const b=document.createElement('button'); b.className='stool'; b.textContent=t; b.onclick=()=>{ if(!demoMode) fn(); }; tools.appendChild(b); });
+  [['＋ Field',()=>addFieldInto(sec.id)],['＋ Section',()=>addSubsectionInto(sec.id)],['— Divider',()=>addDividerInto(sec.id)],['🎯 Target',()=>setTarget(sec.id)]].forEach(([t,fn])=>{ const b=document.createElement('button'); b.className='stool'; b.textContent=t; b.onclick=()=>{ if(!demoMode) fn(); else toast('Demo mode: editing disabled'); }; tools.appendChild(b); });
   head.appendChild(tools); wrap.appendChild(head);
   const grid=document.createElement('div'); grid.className='grid4'; wrap.appendChild(grid);
   const cols = matchMedia('(max-width:640px)').matches ? 1 : matchMedia('(max-width:1024px)').matches ? 2 : 4;
@@ -657,8 +672,8 @@ function renderField(fd){
   }
   const host=document.createElement('div'); host.style.display='flex'; host.style.alignItems='center'; host.style.gap='6px'; host.style.flexWrap='wrap';
   host.appendChild(buildControl(fd)); row.appendChild(host); wrapper.appendChild(row); card.appendChild(wrapper);
-  edit.onclick=(e)=>{ e.stopPropagation(); if(!demoMode){ selectedNodeId=fd.id; openInspector(fd.id); } };
-  del.onclick=(e)=>{ e.stopPropagation(); if(!demoMode){ deleteNode(fd.id); } };
+  edit.onclick=(e)=>{ e.stopPropagation(); if(!demoMode){ selectedNodeId=fd.id; openInspector(fd.id); } else toast('Demo mode: editing disabled'); };
+  del.onclick=(e)=>{ e.stopPropagation(); if(!demoMode){ deleteNode(fd.id); } else toast('Demo mode: editing disabled'); };
   card.onclick=()=>{ if(!demoMode){ selectedNodeId=fd.id; openInspector(fd.id); } };
   return card;
 }
@@ -702,10 +717,10 @@ function openInspector(id){
   paintInspectorPane(tabs[0].key,node,hit);
 
   // actions
-  inspDel.onclick=()=>{ if(demoMode) return; if(!confirm('Delete this item?')) return; if(!hit.parent) return; hit.parent.children = hit.parent.children.filter(x=>x.id!==node.id); render(); insp.classList.remove('open'); };
-  inspDup.onclick=()=>{ if(demoMode) return; const copy=JSON.parse(JSON.stringify(node)); (function ids(n){ n.id=uid(); if(n.children) n.children.forEach(ids); })(copy); hit.parent.children.splice(hit.parent.children.indexOf(node)+1,0,copy); render(); };
-  inspUp.onclick=()=>{ if(demoMode) return; const idx=hit.parent.children.indexOf(node); if(idx>0){ [hit.parent.children[idx-1],hit.parent.children[idx]]=[hit.parent.children[idx],hit.parent.children[idx-1]]; render(); } };
-  inspDown.onclick=()=>{ if(demoMode) return; const idx=hit.parent.children.indexOf(node); if(idx<hit.parent.children.length-1){ [hit.parent.children[idx+1],hit.parent.children[idx]]=[hit.parent.children[idx],hit.parent.children[idx+1]]; render(); } };
+  inspDel.onclick=()=>{ if(demoMode){ toast('Demo mode: editing disabled'); return; } if(!confirm('Delete this item?')) return; if(!hit.parent) return; hit.parent.children = hit.parent.children.filter(x=>x.id!==node.id); render(); insp.classList.remove('open'); };
+  inspDup.onclick=()=>{ if(demoMode){ toast('Demo mode: editing disabled'); return; } const copy=JSON.parse(JSON.stringify(node)); (function ids(n){ n.id=uid(); if(n.children) n.children.forEach(ids); })(copy); hit.parent.children.splice(hit.parent.children.indexOf(node)+1,0,copy); render(); };
+  inspUp.onclick=()=>{ if(demoMode){ toast('Demo mode: editing disabled'); return; } const idx=hit.parent.children.indexOf(node); if(idx>0){ [hit.parent.children[idx-1],hit.parent.children[idx]]=[hit.parent.children[idx],hit.parent.children[idx-1]]; render(); } };
+  inspDown.onclick=()=>{ if(demoMode){ toast('Demo mode: editing disabled'); return; } const idx=hit.parent.children.indexOf(node); if(idx<hit.parent.children.length-1){ [hit.parent.children[idx+1],hit.parent.children[idx]]=[hit.parent.children[idx],hit.parent.children[idx+1]]; render(); } };
 }
 function highlightSelected(){ $$('.fcard,.section').forEach(el=> el.classList.toggle('selected', el.dataset.nid===selectedNodeId)); }
 
@@ -778,15 +793,15 @@ function paintInspectorPane(which,node,hit){
       const vInp=document.createElement('input'); vInp.className='input'; vInp.placeholder='Value';
       vInp.value=(c.value??'');
       const del=document.createElement('button'); del.className='btn ghost'; del.textContent='Remove';
-      del.onclick=()=>{ node.logic.conditions.splice(idx,1); paintInspectorPane('visibility',node,hit); updateVisibility(); };
-      fSel.onchange=()=>{ c.field=fSel.value; c.op=oSel.value; c.value=vInp.value; paintInspectorPane('visibility',node,hit); updateVisibility(); };
-      oSel.onchange=()=>{ c.op=oSel.value; updateVisibility(); };
-      vInp.oninput=()=>{ c.value=vInp.value; updateVisibility(); };
+      del.onclick=()=>{ if(demoMode){ toast('Demo mode: editing disabled'); return; } node.logic.conditions.splice(idx,1); paintInspectorPane('visibility',node,hit); updateVisibility(); };
+      fSel.onchange=()=>{ if(demoMode){ toast('Demo mode: editing disabled'); return; } c.field=fSel.value; c.op=oSel.value; c.value=vInp.value; paintInspectorPane('visibility',node,hit); updateVisibility(); };
+      oSel.onchange=()=>{ if(demoMode){ toast('Demo mode: editing disabled'); return; } c.op=oSel.value; updateVisibility(); };
+      vInp.oninput=()=>{ if(demoMode){ return; } c.value=vInp.value; updateVisibility(); };
       rowEl.append(fSel,oSel,vInp,del); list.appendChild(rowEl);
     });
     inspBody.append(list);
     const addBtn=document.createElement('button'); addBtn.className='btn primary'; addBtn.textContent='＋ Add condition';
-    addBtn.onclick=()=>{ node.logic.conditions.push({field:fields[0]?.id||'', op:'=', value:''}); paintInspectorPane('visibility',node,hit); updateVisibility(); };
+    addBtn.onclick=()=>{ if(demoMode){ toast('Demo mode: editing disabled'); return; } node.logic.conditions.push({field:fields[0]?.id||'', op:'=', value:''}); paintInspectorPane('visibility',node,hit); updateVisibility(); };
     inspBody.append(addBtn);
   }
 }
@@ -809,7 +824,7 @@ function allFieldsExcept(excludeId){
 
 /* Section helpers */
 function sectionById(id){ const it=getItem(); let hit=null; (function walk(n){ if(n.id===id){ hit=n; return; } if(n.type==='section') n.children.forEach(walk); })(it.root); return hit; }
-function setTarget(id){ const sec=sectionById(id); if(sec){ targetSectionId=id; render(); openInspector(id); } }
+function setTarget(id){ if(demoMode){ toast('Demo mode: editing disabled'); return; } const sec=sectionById(id); if(sec){ targetSectionId=id; render(); openInspector(id); } }
 function addFieldInto(secId){ if(demoMode){ toast('Demo mode: editing disabled'); return; } const sec=sectionById(secId); if(!sec) return; const name=($('#fieldName').value||'').trim() || 'Field'; const ft=$('#fieldType').value||'text'; const n=field(ft,name); sec.children.push(n); $('#fieldName').value=''; render(); openInspector(n.id); }
 function addSubsectionInto(secId){ if(demoMode){ toast('Demo mode: editing disabled'); return; } const sec=sectionById(secId); if(!sec) return; const n={id:uid(),type:'section',name:'Section',description:'',span:4,children:[]}; sec.children.push(n); render(); openInspector(n.id); }
 function addDividerInto(secId){ if(demoMode){ toast('Demo mode: editing disabled'); return; } const sec=sectionById(secId); if(!sec) return; sec.children.push(divider()); render(); }
