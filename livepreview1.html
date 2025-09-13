@@ -1,0 +1,3581 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<script id="renderDebounced-shim">
+// Early shim to avoid ReferenceError before helpers load later.
+window.renderDebounced = window.renderDebounced || function(){ try{ if (typeof render==='function') render(); }catch(e){} };
+</script>
+
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Website Name · Designer</title>
+<link id="dynamic-favicon" rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='2' y='2' width='60' height='60' rx='14' fill='%232563eb'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#f6f8fc; --surface:#ffffff; --text:#0f172a; --muted:#64748b; --line:#e5e7eb;
+    --primary:#2563eb; --shadow:0 10px 25px rgba(2,8,23,.08), 0 2px 6px rgba(2,8,23,.06);
+    --radius:16px; --nav-h:64px; --side-w:280px; --insp-w:420px; --container:1240px;
+    --ctrl-h:44px; --ctrl-r:12px; --accent:#1d4ed8; --ring:#93c5fd;
+    --green:#16a34a; --danger:#ef4444; --link:#1d4ed8;
+  }
+  *{box-sizing:border-box} html,body{height:100%}
+  body{
+    margin:0;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial;color:var(--text);
+    background:
+      radial-gradient(1200px 600px at 10% -10%,#ebf2ff 0%,transparent 40%),
+      radial-gradient(1000px 500px at 90% 110%,#eaf7ef 0%,transparent 40%),
+      var(--bg)
+  }
+
+  /* Topbar */
+  .topbar{position:sticky;top:0;z-index:80;height:var(--nav-h);backdrop-filter:saturate(180%) blur(8px);background:rgba(255,255,255,.9);border-bottom:1px solid var(--line)}
+  .topbar .inner{height:100%;display:flex;align-items:center;gap:12px;padding:0 18px;width:100%;margin:0}
+  .brand{display:flex;align-items:center;gap:12px;font-weight:800}
+  .logo{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(135deg,var(--primary),#7c3aed);color:#fff;font-weight:900;cursor:pointer;border:1px solid #c7d2fe;box-shadow:var(--shadow)}
+  .brand-name[contenteditable="true"]{outline:none;border-radius:8px;padding:3px 6px}
+  .brand-name[contenteditable="true"]:focus{box-shadow:0 0 0 2px #bfdbfe;background:#eff6ff}
+  .brand-name[contenteditable="false"]{cursor:default}
+  .menu-btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 10px;font-weight:800;cursor:pointer;display:none}
+  .grow{flex:1}
+
+  /* Mode switch */
+  .mode-switch{display:inline-flex;border:1px solid var(--line);border-radius:999px;background:#fff;overflow:hidden}
+  .mode-switch button{padding:8px 12px;border:0;background:transparent;cursor:pointer;font-weight:800}
+  .mode-switch button.active{background:#1e40af;color:#fff}
+  .mode-hint{font-size:12px;color:var(--muted);margin-left:8px}
+
+  /* Inputs / buttons */
+  .input,.select,.textarea{background:#fff;border:1px solid var(--line);border-radius:var(--ctrl-r);padding:10px 12px;min-width:0;outline:none;height:var(--ctrl-h)}
+  .textarea{height:96px;resize:vertical}
+  .btn{border:0;padding:10px 14px;border-radius:12px;font-weight:700;cursor:pointer;height:var(--ctrl-h)}
+  .btn.primary{background:linear-gradient(135deg,#60a5fa,#22d3ee);color:#081326;border:1px solid #bae6fd}
+  .btn.danger{background:linear-gradient(135deg,#fca5a5,#ef4444);color:#fff;border:1px solid #fecaca}
+  .btn.link{background:transparent;border:0;color:var(--link);text-decoration:underline}
+  .btn:disabled{opacity:.6;cursor:not-allowed}
+
+  /* Layout */
+  .layout{display:grid;grid-template-columns:var(--side-w) 1fr;gap:0;width:100%;margin:0;min-height:calc(100vh - var(--nav-h))}
+  .card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:clamp(16px,2vw,24px)}
+  .card header{font-size:clamp(20px,2.4vw,30px);font-weight:800;margin-bottom:6px}
+  .card header[contenteditable="true"]{outline:none;border-radius:8px;padding:2px 6px}
+  .card header[contenteditable="true"]:focus{box-shadow:0 0 0 2px #bfdbfe;background:#eff6ff}
+  .inline{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .hint{color:var(--muted);font-size:12px}
+  .sep{height:1px;background:var(--line);margin:8px 0}
+  .side-title{font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:#64748b;margin:10px 4px 8px}
+  .side-panel{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px}
+
+  /* ==================== NAVS ==================== */
+  .hwrap{display:flex;align-items:center;gap:6px;min-width:0;margin-left:10px}
+  .hbtn{border:1px solid var(--line);background:#fff;border-radius:10px;width:34px;height:34px;display:grid;place-items:center;cursor:pointer}
+  .hbtn[hidden]{display:none !important} .hribbon::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:999px}
+  .h-item{position:relative}
+  .h-link{display:inline-flex;gap:8px;align-items:center;text-decoration:none;color:#0b1324;padding:8px 12px;border-radius:12px;font-weight:600;border:1px solid transparent;background:#fff}
+  .h-link:hover{background:#f8fafc}
+  .h-link.active{background:#eef2ff;color:#1d4ed8;border-color:#c7d2fe}
+  .h-ico{font-size:14px}
+  .h-caret{font-size:12px;opacity:.7}
+
+  .vnav{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+  .vitem{border-radius:12px}
+  .vbtn{width:100%;display:flex;align-items:center;gap:10px;text-align:left;padding:10px 12px;border:1px solid var(--line);background:#fff;border-radius:12px;cursor:pointer;font-weight:600}
+  .vbtn:hover{background:#f8fafc}
+  .vbtn.active{background:#eef2ff;color:#1d4ed8;border-color:#c7d2fe}
+  .container-tag{margin-left:auto;font-size:11px;color:#1d4ed8;background:#e0e7ff;border:1px solid #c7d2fe;border-radius:999px;padding:2px 8px}
+
+  /* Adders */
+  .adder-pop{position:relative}
+  .adder-pop > button{border:1px dashed var(--line);background:#fff;border-radius:10px;padding:8px 10px;font-weight:700;cursor:pointer}
+  .adder-pop .panel{position:absolute;top:120%;left:0;background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;box-shadow:var(--shadow);display:none;width:380px;z-index:80}
+  .adder-pop.open .panel{display:block}
+  .row{display:flex;gap:8px;flex-wrap:wrap}
+  .panel header{font-weight:800;margin-bottom:8px}
+  .panel .micro{display:flex;gap:6px;align-items:center;color:#64748b;font-size:12px}
+  .panel .micro .dot{width:6px;height:6px;background:#60a5fa;border-radius:999px}
+  .panel .footer{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+
+  /* ===== Floating Menus ===== */
+  .fly-root{position:fixed; inset:0; display:none; z-index:120;}
+  .fly-root.open{display:block;}
+  .fly{position:fixed; top:0; left:0; min-width:240px; max-width:320px; max-height:70vh; overflow:auto;
+       background:#fff; border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:6px}
+  .fly .item{display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; cursor:pointer}
+  .fly .item:hover{background:#f1f5f9}
+  .fly .item .caret{margin-left:auto; opacity:.6}
+  .fly .sub{position:fixed; display:none; min-width:220px; max-height:60vh; overflow:auto; background:#fff; border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); padding:6px}
+  .fly .item.open + .sub{display:block}
+
+  /* ============ FORM ============ */
+  .section{border:1px dashed #cbd5e1;border-radius:12px;padding:12px;background:#fff;margin-top:10px;position:relative}
+  .section-title{display:flex;align-items:center;gap:8px;font-weight:800;margin-bottom:8px}
+  .section-toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+  .stool{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 10px;font-size:12px;cursor:pointer}
+  .grid4{display:grid;grid-template-columns:repeat(4, minmax(0,1fr));gap:12px}
+  .fcard{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0;position:relative}
+  .icons{position:absolute;top:8px;right:8px;display:flex;gap:6px;align-items:center;background:#ffffffcc;border:1px solid var(--line);border-radius:999px;padding:4px 6px}
+  .icon-del{color:#b91c1c;border-color:#fecaca}
+  .preview-form label{color:#334155;font-weight:600;margin:0;line-height:1.2}
+  .preview-form .label-editable[contenteditable="true"]{outline:none;border-radius:6px;padding:2px 4px}
+  .preview-form .label-editable[contenteditable="true"]:focus{box-shadow:0 0 0 2px #bfdbfe;background:#eff6ff}
+  .preview-form input,.preview-form select,.preview-form textarea{width:100%;height:var(--ctrl-h);padding:10px 12px;border-radius:var(--ctrl-r);border:1px solid var(--line);background:#fff;color:#0f172a}
+  .preview-form textarea{min-height:112px}
+
+  /* Divider card */
+  .divider-card{position:relative;background:#fff;border:1px dashed #d1d5db;border-radius:12px;padding:8px}
+  .divider-card hr{border:none;height:1px;background:#e5e7eb}
+
+  /* --- Checkbox & Radio (custom) --- */
+  .choice-row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+  .choice{display:inline-flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+  .choice input{appearance:none;-webkit-appearance:none;outline:none;margin:0;transition:background .18s ease, border-color .18s ease, box-shadow .18s, transform .18s ease;}
+  .choice span{ line-height:1; font-weight:600; color:#111827; }
+  /* Checkbox -> pill switch */
+  .choice input[type="checkbox"]{width:36px;height:20px;border-radius:999px;position:relative;background:#cbd5e1;border:1px solid #cbd5e1}
+  .choice input[type="checkbox"]:hover{border-color:#94a3b8}
+  .choice input[type="checkbox"]:focus-visible{box-shadow:0 0 0 3px var(--ring)}
+  .choice input[type="checkbox"]::after{content:"";position:absolute;top:50%;left:2px;width:16px;height:16px;transform:translateY(-50%);border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.15);transition:left .18s ease}
+  .choice input[type="checkbox"]:checked{background:var(--green);border-color:var(--green)}
+  .choice input[type="checkbox"]:checked::after{left:calc(100% - 18px)}
+  /* Radio -> purple ring */
+  .choice input[type="radio"]{width:18px;height:18px;border-radius:999px;border:2px solid #9aa5b1;background:radial-gradient(circle at 50% 50%, transparent 0 5px, #ffffff 5px 7px, transparent 7px)}
+  .choice input[type="radio"]:hover{border-color:#7c3aed}
+  .choice input[type="radio"]:focus-visible{box-shadow:0 0 0 3px #c7d2fe}
+  .choice input[type="radio"]:checked{border-color:#7c3aed;background:radial-gradient(circle at 50% 50%, #7c3aed 0 5px, #ffffff 5px 7px, transparent 7px)}
+
+  /* --- Rich Toggle field --- */
+  .toggle{position:relative;display:inline-flex;align-items:center;gap:10px}
+  .toggle input{position:absolute;opacity:0;pointer-events:none}
+  .toggle .track{width:44px;height:24px;border-radius:999px;background:#cbd5e1;border:1px solid #cbd5e1;transition:background .18s ease, border-color .18s ease;position:relative}
+  .toggle .thumb{position:absolute;top:50%;left:2px;transform:translateY(-50%);width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.18);transition:left .18s ease}
+  .toggle input:focus-visible + .track{box-shadow:0 0 0 3px var(--ring)}
+  .toggle input:checked + .track{background:#1e40af;border-color:#1e40af}
+  .toggle input:checked + .track .thumb{left:calc(100% - 22px)}
+
+  /* Inspector */
+  .inspector{position:fixed;top:var(--nav-h);right:0;width:var(--insp-w);height:calc(100vh - var(--nav-h));background:#fff;border-left:1px solid var(--line);box-shadow:-10px 0 25px rgba(2,8,23,.08);transform:translateX(105%);transition:transform .15s ease;z-index:90;display:flex;flex-direction:column}
+  .inspector.open{transform:none}
+  .insp-head{padding:12px 14px;border-bottom:1px solid var(--line);font-weight:800;display:flex;align-items:center;gap:8px}
+  .insp-tabs{display:flex;gap:6px;padding:8px 12px;border-bottom:1px solid var(--line)}
+  .insp-tab{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 10px;cursor:pointer;font-size:12px}
+  .insp-tab.active{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8}
+  .insp-body{padding:14px;display:grid;gap:12px;overflow:auto}
+  .insp-row{display:grid;gap:6px}
+  .insp-row .label{font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.08em}
+  .insp-actions{display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line);padding:12px 14px;margin-top:auto}
+  .insp-btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 10px;cursor:pointer}
+  .insp-btn.primary{background:linear-gradient(135deg,#60a5fa,#22d3ee);border-color:#bae6fd}
+
+  /* DEMO MODE: lock editing */
+  body.demo-mode .inspector,
+  body.demo-mode .section-toolbar,
+  body.demo-mode .adder-pop,
+  body.demo-mode .icons { display:none !important }
+  body.demo-mode #logoBtn { display:none !important }
+  body.demo-mode [contenteditable="true"]{pointer-events:none}
+
+  /* Logo Picker */
+  .logo-picker{position:fixed;inset:0;background:rgba(15,23,42,.35);display:none;align-items:center;justify-content:center;z-index:150}
+  .logo-picker.open{display:flex}
+  .lp-panel{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);width:min(920px,94vw);max-height:82vh;display:flex;flex-direction:column}
+  .lp-head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);font-weight:800}
+  .lp-body{display:grid;grid-template-columns:280px 1fr;gap:12px;padding:12px;overflow:auto}
+  .lp-preview{border:1px solid var(--line);border-radius:12px;padding:16px;background:#f8fafc;display:grid;gap:10px;align-content:start}
+  .lp-preview .big{width:84px;height:84px;border-radius:16px;display:grid;place-items:center;border:1px solid #dbeafe;background:linear-gradient(135deg,#60a5fa,#7c3aed);box-shadow:var(--shadow)}
+  .lp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:12px}
+  .lp-item{border:1px solid var(--line);border-radius:12px;padding:10px;display:grid;place-items:center;gap:6px;cursor:pointer;background:#fff}
+  .lp-item:hover{background:#f8fafc}
+  .lp-item.active{outline:2px solid #93c5fd}
+  .lp-item svg{width:56px;height:56px}
+  .lp-foot{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}
+  .isearch{flex:1}
+
+  /* Toast */
+  .toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;border-radius:999px;padding:10px 14px;font-weight:700;z-index:200;opacity:0;pointer-events:none;transition:opacity .2s ease}
+  .toast.show{opacity:1}
+
+  /* ======== DateTime Picker (custom) ======== */
+  .dtp-root{position:fixed;inset:0;display:none;align-items:flex-start;justify-content:center;background:rgba(0,0,0,.15);z-index:160}
+  .dtp-root.open{display:flex}
+  .dtp{margin-top:80px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);width:min(720px,96vw);overflow:hidden}
+  .dtp-head{display:flex;align-items:center;justify-content:space-between;background:#2563eb;color:#fff;padding:10px 14px}
+  .dtp-head .navbtn{background:transparent;border:0;color:#fff;font-size:20px;cursor:pointer}
+  .dtp-body{display:grid;grid-template-columns:1.2fr .8fr;gap:0}
+  .dtp-cal{padding:12px}
+  .dtp-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+  .dtp-dayhead{font-size:12px;color:#334155;text-align:center}
+  .dtp-cell{height:36px;display:grid;place-items:center;border-radius:10px;cursor:pointer}
+  .dtp-cell.dis{opacity:.35;cursor:default}
+  .dtp-cell.cur{background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8}
+  .dtp-cell.sel{background:#2563eb;color:#fff}
+  .dtp-clock{padding:12px;display:grid;gap:10px;align-content:start}
+  .dtp-time{font-weight:800;font-size:18px;text-align:right;padding:0 6px}
+  .clock-face{width:240px;height:240px;margin-inline:auto;background:#f1f5f9;border-radius:999px;position:relative;border:1px solid #e5e7eb}
+  .clock-num{position:absolute;transform:translate(-50%,-50%);color:#0f172a}
+  .clock-hand{position:absolute;top:50%;left:50%;width:2px;height:34%;background:#2563eb;transform-origin:50% 100%;border-radius:2px}
+  .ampm{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:6px}
+  .ampm button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 10px;cursor:pointer}
+  .ampm .active{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8}
+  .dtp-foot{padding:12px;display:flex;justify-content:center}
+  .dtp-foot .btn{min-width:140px}
+
+  /* Responsive */
+  @media (max-width:1024px){ .layout{grid-template-columns:1fr} .sidebar{position:fixed;top:var(--nav-h);left:0;width:min(86vw,320px);transform:translateX(-105%);transition:transform .15s ease;box-shadow:var(--shadow)} body.side-open .sidebar{transform:none} .menu-btn{display:inline-block} .lp-body{grid-template-columns:1fr} }
+  @media (max-width:640px){ .grid4{grid-template-columns:1fr} .preview-form .field{grid-template-columns:1fr} .btn,.input,.select{width:100%} #formActions{flex-direction:column;align-items:stretch} .hribbon{max-width:50vw} .dtp-body{grid-template-columns:1fr} .clock-face{width:220px;height:220px} }
+
+  .cond-badge{font-size:11px;margin-left:6px}
+  .fcard.dimmed{opacity:.6}
+
+  .file-preview{display:grid;grid-template-columns:1fr;gap:12px;align-items:start}
+  @media (min-width: 900px){ .file-preview{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  .file-frame{position:relative;width:100%;max-width:560px;cursor:pointer}
+  .file-frame img{display:block;width:100%;height:auto}
+  .file-frame iframe{display:block;width:100%;aspect-ratio:4/3;border:0}
+  .viewer-btn{position:absolute;top:8px;right:8px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 10px;cursor:pointer;box-shadow:var(--shadow)}
+  .viewer-btn:hover{background:#f8fafc}
+  .viewer-body img{max-width:100%;height:auto;display:block;border-radius:12px}
+  .viewer-body iframe{width:86vw;max-width:1040px;height:70vh;border:0;border-radius:12px;background:#111827} .hribbon::-webkit-scrollbar{height:6px}
+
+  /* === Enhanced Nav Styles (Vertical / Horizontal) === */
+  .vnav li{list-style:none}
+  .vnav button{width:100%;display:flex;align-items:center;gap:12px;padding:10px 12px;border:0;background:transparent;border-radius:12px;cursor:pointer}
+  .vnav button:hover{background:#f1f5f9}
+  .vnav .icon{width:22px;display:inline-grid;place-items:center}
+  .vnav .name{flex:1;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hribbon{display:flex;gap:10px;overflow:auto;padding:8px}
+  .hribbon a:hover{background:#f8fafc}
+  .hribbon a.active{background:#111827;color:#fff;border-color:#111827}
+
+  .fullscreen-btn{position:fixed;top:10px;right:12px;z-index:180}
+
+  /* Left-align vertical nav wrapper */
+  .layout{display:grid;grid-template-columns:240px 1fr;gap:16px}
+
+  .icon-picker{position:absolute;z-index:120;inset:auto auto auto 0;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:8px;display:grid;grid-template-columns:repeat(8,28px);gap:6px;max-width:260px}
+  .icon-picker button{width:28px;height:28px;display:grid;place-items:center;border:1px solid transparent;border-radius:8px;background:#fff;cursor:pointer}
+  .icon-picker button:hover{border-color:#e5e7eb;background:#f8fafc}
+  .icon-input-wrap{position:relative;display:flex;gap:6px;align-items:center}
+  .sidebar{position:sticky; top:64px; align-self:start; border-right:1px solid var(--line); padding-right:8px; background:#fff}
+  .sidebar .card{box-shadow:none; background:transparent}
+
+  /* Left-align vertical nav wrapper hardening */
+  .layout{display:grid;grid-template-columns:240px 1fr;gap:16px}
+  @media (max-width: 900px){ .layout{grid-template-columns:1fr} }
+  .content{padding-left:0}
+
+  .page-head{display:flex;align-items:center;gap:10px;font-size:22px;font-weight:800}
+  .ico-tools{margin-left:auto;display:flex;gap:6px}
+  .ico-tools .btn{padding:4px 8px}
+  body.demo-mode .ico-tools{display:none}
+  body:not(.demo-mode) .ico-tools{display:flex}
+
+  .page-ico-trigger{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);background:#fff;border-radius:10px;padding:4px 8px;cursor:pointer}
+  .page-ico-trigger:hover{background:#f8fafc}
+  .page-ico-pop{position:absolute;z-index:160;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:8px;display:none;grid-template-columns:repeat(10,28px);gap:6px;margin-top:6px}
+  body.demo-mode .page-ico-trigger{display:none}
+
+  /* === Overrides: full-width layout and flush-left sidebar === */
+  .layout{max-width:none;width:100%;margin:0}
+  .layout{grid-template-columns:var(--side-w) 1fr}
+  aside.sidebar{margin-left:0;padding-left:0}
+
+  /* === Modern, responsive typography (best-practice scale) === */
+  :root{
+    --font-sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    /* Responsive font sizes using clamp(min, vw-based, max) */
+    --fs-xs: clamp(11px, 0.75vw, 12px);
+    --fs-sm: clamp(12px, 0.8vw, 13px);
+    --fs-base: clamp(14px, 0.95vw, 16px);
+    --fs-md: clamp(15px, 1.05vw, 18px);
+    --fs-lg: clamp(18px, 1.4vw, 20px);
+    --fs-xl: clamp(20px, 1.8vw, 24px);
+    --fs-2xl: clamp(24px, 2.4vw, 28px);
+
+    --fw-regular: 400;
+    --fw-medium: 500;
+    --fw-semibold: 600;
+    --fw-bold: 700;
+    --fw-extrabold: 800;
+
+    --lh-tight: 1.15;
+    --lh-normal: 1.45;
+    --lh-relaxed: 1.6;
+  }
+  html, body{font-family: var(--font-sans); font-size: var(--fs-base); line-height: var(--lh-normal);}
+  /* Headings */
+  h1, .h1{font-size: var(--fs-2xl); font-weight: var(--fw-extrabold); line-height: var(--lh-tight); letter-spacing: -0.01em;}
+  h2, .h2{font-size: var(--fs-xl); font-weight: var(--fw-bold); line-height: 1.2; letter-spacing: -0.005em;}
+  h3, .h3{font-size: var(--fs-lg); font-weight: var(--fw-semibold); line-height: 1.25;}
+  /* Page header */
+  .page-head{font-size: var(--fs-xl) !important; font-weight: var(--fw-extrabold) !important; line-height: var(--lh-tight);}
+  .page-ico{font-size: inherit;}
+  /* Sections & labels */
+  .section-name{font-size: var(--fs-lg); font-weight: var(--fw-bold); line-height: 1.2;}
+  label, .label{font-size: var(--fs-sm); font-weight: var(--fw-semibold); color: #111827;}
+  .hint, .subtle, small{font-size: var(--fs-sm); color:#6b7280}
+  /* Inputs / controls */
+  input, select, textarea, .rich-wrap [contenteditable="true"]{font-size: var(--fs-base); line-height: 1.35;}
+  .chip{font-size: var(--fs-xs); font-weight: var(--fw-medium);}
+  /* Buttons */
+  .btn{font-size: var(--fs-sm); font-weight: var(--fw-semibold);}
+  .btn.ghost{font-weight: var(--fw-medium);}
+  /* Nav */
+  .vnav button{font-size: var(--fs-base); font-weight: var(--fw-medium);}
+  .vnav button.active{font-weight: var(--fw-semibold);}
+  .hribbon a{font-size: var(--fs-sm); font-weight: var(--fw-medium);}
+  /* Cards & field titles */
+  .fcard .label-editable{font-size: var(--fs-base); font-weight: var(--fw-semibold);}
+  /* Dialog viewer */
+  .viewer-title{font-size: var(--fs-base); font-weight: var(--fw-bold);}
+
+  /* === Tighten vertical rhythm between form fields === */
+  .lp-preview{gap:6px !important;}
+  .preview-form .field{row-gap:2px !important; margin-bottom:6px !important;}
+  /* Reduce internal spacing within each field card */
+  .fcard{margin-bottom:8px !important;}
+  /* Compact divider spacing */
+  .divider-card{padding:6px !important; margin:6px 0 !important;}
+
+  /* === Remove visual wrapper around each field === */
+  .fcard{background:transparent !important; border:none !important; box-shadow:none !important; padding:0 !important; border-radius:0 !important; margin:0 0 6px 0 !important;}
+  .fcard .head{padding:0 !important; margin-bottom:4px !important; background:transparent !important; border:0 !important; box-shadow:none !important;}
+  .fcard .body{padding:0 !important; background:transparent !important; border:0 !important; box-shadow:none !important; gap:6px !important;}
+  /* Keep action icons positioned above content */
+  .fcard .icons{top:0; right:0}
+
+  #pageName[data-editing="1"]{outline:0;box-shadow:0 0 0 2px #bfdbfe;background:#eff6ff;border-radius:6px;padding:2px 4px}
+
+  .page-edit-btn{margin-left:auto}
+  body.demo-mode .page-edit-btn{display:none}
+
+  #pageName{cursor:text}
+  body.demo-mode #pageName{cursor:default}
+  #pageName:hover{background:rgba(191,219,254,.35); border-radius:6px}
+
+  [data-editing="1"]{outline:0;box-shadow:0 0 0 2px #bfdbfe;background:#eff6ff;border-radius:6px;padding:2px 4px}
+
+  /* Place fullscreen next to Edit/Demo instead of fixed overlay */
+  .fullscreen-btn.inline{position:static !important; margin-left:8px; z-index:auto}
+  /* Keep the fixed fallback minimal height so it won't overlap header if ever used */
+  .fullscreen-btn{top:56px}
+
+  /* === Modern Viewer Dialog === */
+  .viewer-root{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,8,23,.55);backdrop-filter:blur(6px);z-index:170}
+  .viewer-root.open{display:flex;animation:fadeIn .15s ease-out}
+  @keyframes fadeIn{from{opacity:0;transform:scale(.98)}to{opacity:1;transform:none}}
+  .viewer{background:#0b1220;border:1px solid rgba(255,255,255,.06);border-radius:16px;box-shadow:0 10px 40px rgba(2,8,23,.45);max-width:min(96vw,1200px);max-height:90vh;width:clamp(320px,92vw,1200px);display:grid;grid-template-rows:auto 1fr}
+  .viewer-header{display:flex;align-items:center;gap:8px;justify-content:space-between;padding:10px 14px;color:#e5e7eb;background:linear-gradient(180deg,#0f172a,#0c1426);border-bottom:1px solid rgba(255,255,255,.06);border-top-left-radius:16px;border-top-right-radius:16px}
+  .viewer-title{font-weight:700;letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:55vw}
+  .viewer-actions{display:flex;align-items:center;gap:8px}
+  .viewer-actions .btn{margin:0}
+  .viewer-body{position:relative;padding:0;background:#0b1220;display:grid;place-items:center;overflow:hidden;border-bottom-left-radius:16px;border-bottom-right-radius:16px}
+  .viewer-stage{position:relative;max-width:100%;max-height:100%;width:100%;height:100%;display:grid;place-items:center;overflow:hidden}
+  .viewer-stage img,.viewer-stage iframe{display:block;max-width:100%;max-height:100%;border:0;border-radius:12px;background:#0b1220;transform-origin:center center;transition:transform .12s ease-out}
+  .viewer-toolbar{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;display:flex;gap:8px;background:rgba(15,23,42,.9);border:1px solid rgba(255,255,255,.08);padding:6px 8px;border-radius:999px;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+  .toolbar-btn{border:0;background:transparent;color:#e5e7eb;padding:6px 10px;border-radius:999px;cursor:pointer;font-size:14px}
+  .toolbar-btn:hover{background:rgba(255,255,255,.08)}
+  @media (max-width: 640px){
+    .viewer{max-width:96vw}
+  }
+
+  /* === Uploader enhancements === */
+  .file-preview{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;align-items:start}
+  .file-card{position:relative;border:1px solid var(--line);background:#fff;border-radius:12px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;min-height:140px}
+  .file-thumb{display:block;width:100%;aspect-ratio:4/3;border:0;background:#f8fafc;object-fit:contain}
+  .file-thumb.is-pdf{background:#111827}
+  .file-name{padding:8px 10px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-top:1px solid var(--line)}
+  .file-meta{padding:0 10px 8px 10px;font-size:12px;color:#6b7280}
+  .file-actions{display:flex;gap:6px;flex-wrap:wrap;padding:8px 10px;border-top:1px solid var(--line);background:#fafafa}
+  .file-actions .btn{padding:4px 8px;font-size:12px}
+  .drop-zone{margin-top:8px;border:1px dashed #cbd5e1;border-radius:12px;padding:14px;display:flex;align-items:center;justify-content:center;gap:8px;background:#f8fafc;color:#64748b;cursor:pointer}
+  .drop-zone.over{background:#eef2ff;border-color:#93c5fd;color:#1e40af}
+  .error-list{margin-top:8px;color:#b91c1c;font-size:12px}
+
+  /* === Modal Dropzone Uploader === */
+  .upload-root{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,8,23,.55);backdrop-filter:blur(6px);z-index:180}
+  .upload-root.open{display:flex;animation:fadeIn .15s ease-out}
+  .upload{background:#ffffff;border:1px solid #e6e8f0;border-radius:16px;box-shadow:0 10px 40px rgba(2,8,23,.25);max-width:min(96vw,900px);width:clamp(320px,92vw,900px);display:grid;grid-template-rows:auto 1fr}
+  .upload-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #eef2f7}
+  .upload-title{font-weight:700}
+  .upload-body{padding:16px}
+  .upload-drop{border:2px dashed #cbd5e1;border-radius:16px;background:#f8fafc;min-height:240px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#475569;text-align:center}
+  .upload-drop.over{background:#eef2ff;border-color:#93c5fd;color:#1e3a8a}
+  .upload-actions{margin-top:14px;display:flex;gap:8px;justify-content:center}
+  .upload-actions .btn{padding:8px 12px}
+  .close-x{border:0;background:transparent;color:#374151;font-size:18px;border-radius:10px;cursor:pointer;padding:6px 8px}
+  .close-x:hover{background:#f3f4f6}
+
+  /* === Modal File Manager (grid in dialog) === */
+  .mgr-root{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,8,23,.55);backdrop-filter:blur(6px);z-index:182}
+  .mgr-root.open{display:flex;animation:fadeIn .15s ease-out}
+  .mgr{max-height:90vh;background:#ffffff;border:1px solid #e6e8f0;border-radius:16px;box-shadow:0 10px 40px rgba(2,8,23,.25);max-width:min(96vw,1000px);width:clamp(360px,92vw,1000px);display:grid;grid-template-rows:auto auto 1fr auto}
+  .mgr-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #eef2f7}
+  .mgr-title{font-weight:700}
+  .mgr-drop{max-height:180px;margin:12px 16px;border:2px dashed #cbd5e1;border-radius:14px;background:#f8fafc;min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#475569;text-align:center}
+  .mgr-drop.over{background:#eef2ff;border-color:#93c5fd;color:#1e3a8a}
+  .mgr-body{padding:0 16px 16px 16px;min-height:220px; overflow:auto;}
+  .mgr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;align-items:start}
+  .mgr-card{position:relative;border:1px solid var(--line);background:#fff;border-radius:12px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;min-height:140px}
+  .mgr-thumb{display:block;width:100%;aspect-ratio:4/3;border:0;background:#f8fafc;object-fit:contain}
+  .mgr-thumb.is-pdf{background:#111827}
+  .mgr-name{padding:8px 10px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-top:1px solid var(--line)}
+  .mgr-meta{padding:0 10px 8px 10px;font-size:12px;color:#6b7280}
+  .mgr-actions{display:flex;gap:6px;flex-wrap:wrap;padding:8px 10px;border-top:1px solid var(--line);background:#fafafa}
+  .mgr-actions .btn{padding:4px 8px;font-size:12px}
+  .mgr-actions .btn.ghost{background:#fff}
+  .mgr-footer{display:flex;justify-content:flex-end;gap:8px;padding:12px 16px;border-top:1px solid #eef2f7}
+
+  .viewer-root{z-index:190 !important}
+
+  /* Ensure field action icons are visible and positioned */
+  .fcard{position:relative}
+  .fcard .icon-btn{opacity:0.9}
+
+  /* === Nice Confirmation Dialog === */
+  .confirm-root{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,8,23,.55);backdrop-filter:blur(4px);z-index:200}
+  .confirm-root.open{display:flex;animation:fadeIn .12s ease-out}
+  .confirm{background:#ffffff;border:1px solid #e6e8f0;border-radius:14px;box-shadow:0 10px 32px rgba(2,8,23,.25);width:min(92vw,440px);display:grid;grid-template-rows:auto 1fr auto}
+  .confirm-head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid #eef2f7}
+  .confirm-title{font-weight:700}
+  .confirm-body{padding:14px;color:#475569}
+  .confirm-foot{display:flex;justify-content:flex-end;gap:8px;padding:12px 14px;border-top:1px solid #eef2f7}
+  .confirm .btn{padding:8px 12px}
+
+  /* Danger styling for confirm dialog */
+  .confirm .btn.danger{background:#ef4444;color:#fff;border-color:#ef4444}
+  .confirm .btn.danger:hover{background:#dc2626;border-color:#dc2626}
+  .confirm-head .icon{font-size:18px;line-height:1}
+
+  /* === Mini field toolbar & label affordance === */
+  .fcard{position:relative}
+  .fcard .icons{position:absolute; top:4px; right:4px; display:flex; gap:6px; z-index:5}
+  .icon-btn{opacity:.9}
+  .fcard:hover .icon-btn{opacity:1}
+  /* Add two more buttons in icons row will inherit styles */
+
+  /* Label inline-edit affordance */
+  .label-editable{position:relative}
+  body:not(.demo-mode) .label-editable::after{
+    content:'✎';
+    opacity:0;
+    transition:opacity .12s ease;
+    margin-left:6px;
+    font-size:12px;
+    color:#64748b;
+  }
+  body:not(.demo-mode) .fcard:hover .label-editable::after{opacity:.8}
+
+  /* Inline option chips editor */
+  .opt-chips{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px}
+  .opt-chip{display:inline-flex; align-items:center; gap:6px; background:#f3f4f6; border:1px solid var(--line); border-radius:999px; padding:4px 8px}
+  .opt-chip .txt{outline:none; min-width:24px}
+  .opt-chip .rm{border:0; background:transparent; cursor:pointer; font-size:14px; line-height:1}
+  .opt-add{padding:4px 8px; font-size:12px}
+
+  /* Hide add-option controls in Demo mode */
+  body.demo-mode .opt-add { display: none !important; }
+
+  /* Hide option chips ("tags") in Demo mode */
+  body.demo-mode .opt-chips { display: none !important; }
+
+  /* Unified dropdown styling (Edit & Demo) */
+  select.select{
+    appearance:none; -webkit-appearance:none; -moz-appearance:none;
+    background: #fff url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="10" viewBox="0 0 20 14"><path d="M4 5l6 6 6-6" stroke="%2362748b" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>') no-repeat right 10px center;
+    padding: 8px 34px 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    font-size: 14px;
+    line-height: 1.4;
+    min-height: 36px;
+    width: 100%;
+    box-shadow: var(--shadow);
+  }
+  body.demo-mode select.select{ /* same look in Demo */ }
+  /* Tighten spacing when option chips are hidden in Demo */
+  body.demo-mode .opt-chips { display:none !important; }
+  body.demo-mode .fcard .field-body{ margin-bottom: 0; }
+
+  /* Ensure identical control widths in Edit and Demo modes */
+  .fcard .field-body select.select,
+  .fcard .field-body input:not([type=checkbox]):not([type=radio]),
+  .fcard .field-body textarea { width: 100%; box-sizing: border-box; }
+
+  body.demo-mode .fcard .field-body select.select,
+  body.demo-mode .fcard .field-body input:not([type=checkbox]):not([type=radio]),
+  body.demo-mode .fcard .field-body textarea { width: 100%; box-sizing: border-box; }
+
+  /* Prevent demo-mode spacing changes from affecting width */
+  body.demo-mode .fcard .field-body { display:block }
+
+  /* Smaller checkbox & radio controls (consistent across modes) */
+  .fcard input[type=checkbox],
+  .fcard input[type=radio]{
+    width: 14px;
+    height: 14px;
+    vertical-align: middle;
+    margin: 0 6px 0 0;
+  }
+  /* Tighter inline label spacing for checkbox/radio groups */
+  .fcard label.inline{
+    gap: 6px;
+  }
+/* Disable inline edit affordance for field labels and logo */
+  .fcard label .label-editable{ cursor: default !important; }
+  #logoText, .logo-text, [data-role="logo-text"]{ cursor: default !important; }
+
+</style>
+
+<style>
+/* ensure inline-edit targets are interactive in Edit mode */
+body:not(.demo-mode) #siteName,
+body:not(.demo-mode) .fcard label .label-editable{
+  pointer-events:auto;
+  user-select:text;
+  -webkit-user-select:text;
+  cursor:text;
+}
+</style>
+
+<style>
+/* Hard guard: make inline-edit targets unambiguously interactive in Edit mode */
+body:not(.demo-mode) #siteName,
+body:not(.demo-mode) .fcard label .label-editable{
+  pointer-events: auto !important;
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  cursor: text !important;
+  position: relative;
+  z-index: 2;
+}
+</style>
+
+<style id="inline-edit-style">
+/* === Inline editing styles for FIELD LABELS === */
+:root{
+  --ie-bg: rgba(250, 204, 21, 0.18);        /* warm highlight */
+  --ie-border: rgba(59, 130, 246, 0.65);    /* blue focus */
+  --ie-shadow: rgba(37, 99, 235, 0.25);
+}
+/* Base affordance (Edit mode only) */
+body:not(.demo-mode) .label-editable{ 
+  display:inline-block; 
+  border-radius:.375rem; 
+  transition: background-color .15s ease, box-shadow .15s ease, outline-color .15s ease; 
+  cursor:text;
+}
+body:not(.demo-mode) .fcard:hover .label-editable{ 
+  background:rgba(148, 163, 184, 0.10);
+}
+
+/* Active editing state */
+body:not(.demo-mode) .label-editable[data-inline-editing="1"],
+body:not(.demo-mode) .label-editable[contenteditable="true"]:focus{
+  background: var(--ie-bg);
+  outline: 2px dashed var(--ie-border);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--ie-shadow);
+  padding: 2px 6px;
+  caret-color:#111827;
+  animation: ie-pop .12s ease-out;
+}
+
+/* Prevent layout shifts */
+body:not(.demo-mode) .preview-form label{ display:inline-block; }
+
+@keyframes ie-pop {
+  from { transform: scale(.985); opacity:.9; }
+  to   { transform: scale(1);    opacity:1; }
+}
+</style>
+
+
+<style id="opt-inline-css">
+.opt-inline { margin-top: .25rem; display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; }
+.opt-action { font: inherit; border: 0; background: none; cursor: pointer; padding: 0 6px; opacity:.8 }
+.opt-action:hover { opacity: 1 }
+.opt-action.add::before { content: "➕ "; }
+.opt-action.remove { margin-left: .25rem; }
+.cb-row-tools { display:inline-flex; align-items:center; gap:.25rem; margin-left:.25rem; }
+</style>
+
+
+<style id="opt-inline-css-visibility">
+/* Hide dynamic option editors in Demo mode */
+body.demo-mode .opt-inline,
+body.demo-mode .cb-row-tools {
+  display: none !important;
+}
+</style>
+
+
+<style id="page-header-style">
+/* === Page Header Style (works for #pageName, .page-title, [data-role="page-title"]) === */
+:root{
+  --ph-title: #0f172a;         /* slate-900 */
+  --ph-sub: #475569;           /* slate-600 */
+  --ph-accent: #0ea5e9;        /* sky-500 */
+  --ph-line: rgba(2, 6, 23, 0.08);
+  --ph-bg: #f0f9ff;              /* sky-50 */
+  --ph-border: #0ea5e9;          /* sky-500 */
+}
+
+.page-header{ 
+  display:flex; align-items:flex-end; justify-content:space-between; 
+  gap:1rem; padding:1.25rem 1rem 0.75rem 1rem; 
+  
+  background:transparent;
+  border: 1px solid var(--ph-border);
+  background: var(--ph-bg);
+}
+
+
+.page-header .title-wrap{ display:flex; flex-direction:column; gap:.25rem; min-width:0; }
+.page-header .title-wrap .kicker{
+  font-size:.75rem; letter-spacing:.08em; text-transform:uppercase; color:var(--ph-sub);
+  font-weight:600;
+}
+/* The actual page title element (binds to whichever exists) */
+.page-header .title-wrap #pageName,
+.page-header .title-wrap .page-title,
+.page-header .title-wrap [data-role="page-title"]{
+  color:var(--ph-title);
+  font-size:clamp(1.25rem, 2.4vw, 1.75rem);
+  line-height:1.2;
+  font-weight:700;
+  margin:0;
+  padding:0;
+  /* allow inline edit without flashy highlight */
+  cursor:text; user-select:text; -webkit-user-select:text;
+  outline:none;
+}
+.page-header .title-wrap .subtitle{
+  color:var(--ph-sub);
+  font-size:clamp(.85rem, 1.2vw, .95rem);
+  line-height:1.35;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+
+/* Optional actions area on the right (buttons, filters) */
+.page-header .actions{ display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; }
+.page-header .actions .btn{
+  display:inline-flex; align-items:center; gap:.5rem;
+  height:2.25rem; padding:0 .8rem; border-radius:.5rem;
+  border:1px solid var(--ph-line); background:#fff; color:#0f172a;
+  font-weight:600; font-size:.9rem; text-decoration:none;
+}
+.page-header .actions .btn:hover{ border-color:rgba(2,6,23,.18); }
+.page-header .actions .btn.ghost{ background:transparent; }
+.page-header .actions .btn.primary{ border-color:transparent; background:var(--ph-accent); color:white; }
+
+/* Sticky variant (opt-in by adding .sticky to .page-header) */
+.page-header.sticky{ position:sticky; top:0; z-index:30; backdrop-filter:saturate(180%) blur(10px); background:var(--ph-bg); }
+@supports not (backdrop-filter: blur(10px)){
+  .page-header.sticky{ background:#fff; }
+}
+
+/* Compact variant (opt-in) */
+.page-header.compact{ padding:.75rem 1rem; }
+.page-header.compact .title-wrap [data-role="page-title"],
+.page-header.compact .title-wrap #pageName,
+.page-header.compact .title-wrap .page-title{ font-size:clamp(1.1rem,2vw,1.4rem); }
+
+/* Dark mode prep (optional; uncomment to enable if you have dark class)
+.dark .page-header{ border-color:rgba(255,255,255,.08); }
+.dark .page-header .title-wrap [data-role="page-title"],
+.dark .page-header .title-wrap #pageName,
+.dark .page-header .title-wrap .page-title{ color:#e2e8f0; }
+.dark .page-header .title-wrap .subtitle,
+.dark .page-header .title-wrap .kicker{ color:#94a3b8; }
+.dark .page-header .actions .btn{ background:#0b1220; color:#e2e8f0; border-color:rgba(255,255,255,.08); }
+.dark .page-header .actions .btn.primary{ background:#38bdf8; color:#0b1220; }
+*/
+</style>
+
+
+<style id="page-header-style-golive">
+/* Variant for the page header with the title "Go Live" */
+.page-header.variant-golive{
+  /* override theme tokens just for this header */
+  --ph-bg: #f0fdf4;        /* green-50 */
+  --ph-border: #10b981;    /* emerald-500 */
+  --ph-title: #064e3b;     /* emerald-900 */
+  --ph-sub: #047857;       /* emerald-700 */
+  position: relative;
+}
+/* Subtle left accent bar */
+.page-header.variant-golive::before{
+  content:""; position:absolute; left:0; top:0; bottom:0; width:4px;
+  background: linear-gradient(180deg, #10b981, #34d399);
+  border-top-left-radius: 8px; border-bottom-left-radius: 8px;
+}
+/* Example: make the primary button match the variant color if actions exist */
+.page-header.variant-golive .actions .btn.primary{
+  background:#10b981; color:white; border-color:transparent;
+}
+</style>
+
+
+<style id="fit-sections-fullheight">
+/* Fill height for form designer and vertical nav (widths untouched) */
+#designerCard{
+  min-height: calc(100vh - var(--nav-h));
+  display: flex;
+  flex-direction: column;
+}
+#designerCard > #formHost{
+  flex: 1 1 auto;
+  min-height: 0; /* allow internal scrolling if needed */
+  display: flex;
+  flex-direction: column;
+}
+/* Vertical nav fills viewport height and scrolls internally */
+aside.sidebar{
+  position: sticky;
+  top: var(--nav-h);
+  height: calc(100vh - var(--nav-h));
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+</style>
+
+</head>
+<body>
+  <!-- Topbar -->
+  <nav class="topbar">
+    <div class="inner">
+      <div class="brand">
+        <div class="logo" id="logoBox" title="Click to change logo"></div>
+        <div id="siteName" class="brand-name" contenteditable="true" spellcheck="false" title="Click to edit">
+          Website Name
+        </div>
+        <button id="logoBtn" class="btn soft" style="height:34px;padding:6px 10px">Manage Logo</button>
+      </div>
+
+      <button id="toggleSideBtn" class="menu-btn">☰ Menu</button>
+
+      <!-- Horizontal ribbon -->
+      <div class="hwrap" style="flex:1;min-width:0">
+        <button class="hbtn" id="hPrev" title="Scroll left" hidden>‹</button>
+        <div class="hribbon" id="hRibbon" role="menubar" aria-label="Features"></div>
+        <button class="hbtn" id="hNext" title="Scroll right" hidden>›</button>
+
+        <!-- Add horizontal item -->
+        <div class="adder-pop" id="hAdder">
+          <button type="button" aria-haspopup="true" aria-expanded="false">＋ Add</button>
+          <div class="panel">
+            <header>New horizontal item<button id="pageEditBtn" class="btn ghost page-edit-btn" title="Edit page title" aria-label="Edit page title">✎ Edit</button></header>
+            <div class="row">
+              <input id="navNameH" class="input" placeholder="Item name…" style="flex:1" />
+              <input id="iconPreviewH" class="input" placeholder="Icon (emoji or text)" style="width:160px" />
+            </div>
+            <div class="row">
+              <select id="navParentH" class="select" style="flex:1"></select>
+              <div class="micro"><span class="dot"></span>Up to 3 levels</div>
+            </div>
+            <div class="footer">
+              <button class="btn ghost" id="cancelNavH">Cancel</button>
+              <button class="btn primary" id="addNavBtnH">Add</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mode switch -->
+      <div class="mode-switch" id="modeSwitch">
+        <button id="modeEdit" class="active" aria-selected="true">Edit</button>
+        <button id="modeDemo" aria-selected="false">Demo</button>
+      </div>
+      <div class="mode-hint">Shift+D</div>
+    </div>
+  </nav>
+
+  <!-- Layout -->
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="side-title">Navigation</div>
+      <div class="side-panel" style="margin-bottom:10px">
+        <div class="inline" style="gap:6px"><span class="chip">Tip</span><span class="hint">Items with children are <b>containers</b>: click to open their submenu.</span></div>
+      </div>
+
+      <ul id="vNav" class="vnav"></ul>
+
+      <!-- Add vertical item -->
+      <div class="adder-pop" id="vAdder" style="margin-top:10px">
+        <button type="button">＋ Add vertical item</button>
+        <div class="panel">
+          <header>New vertical item</header>
+          <div class="row">
+            <input id="navNameV" class="input" placeholder="Item name…" style="flex:1" />
+            <input id="iconPreviewV" class="input" placeholder="Icon (emoji or text)" style="width:160px" />
+          </div>
+          <div class="row">
+            <select id="navParentV" class="select" style="flex:1"></select>
+            <div class="micro"><span class="dot"></span>Up to 3 levels</div>
+          </div>
+          <div class="footer">
+            <button class="btn ghost" id="cancelNavV">Cancel</button>
+            <button class="btn primary" id="addNavBtnV">Add</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="side-title" style="margin-top:14px">Admin</div>
+      <ul class="vnav">
+        <li class="vitem"><button class="vbtn"><span class="ico">⚙️</span> Settings</button></li>
+        <li class="vitem"><button class="vbtn"><span class="ico">🔒</span> Roles & Access</button></li>
+      </ul>
+    </aside>
+
+    <main class="content">
+      <section class="card" id="designerCard">
+        <header id="pageHeader" class="page-head"><span id="pageIconWrap" class="page-ico-trigger"><span id="pageIcon" class="page-ico"></span><span class="caret">▾</span></span><div id="pageIconPop" class="page-ico-pop"></div><span id="pageName" class="label-editable" contenteditable="true" title="Click to rename">FORM_NAME</span></header>
+        <div class="sep"></div>
+        <div id="formHost"></div>
+        <div id="formActions" class="inline" style="margin-top:12px;gap:10px">
+          <button id="formSubmit" class="btn primary" type="button">Submit</button>
+          <button id="formReset" class="btn ghost" type="button">Reset</button>
+          <div id="formNote" class="hint"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Inspector -->
+  <aside id="inspector" class="inspector" aria-label="Inspector">
+    <div class="insp-head"><span id="inspTitle">Inspector</span><div class="grow"></div><button id="inspClose" class="insp-btn">✖</button></div>
+    <div class="insp-tabs" id="inspTabs"></div>
+    <div class="insp-body" id="inspBody"></div>
+    <div class="insp-actions">
+      <button id="inspUp" class="insp-btn">↑ Up</button>
+      <button id="inspDown" class="insp-btn">↓ Down</button>
+      <button id="inspDup" class="insp-btn">⧉ Duplicate</button>
+      <button id="inspDel" class="insp-btn" style="color:#b91c1c;border-color:#fecaca">🗑️ Delete</button>
+      <div class="grow"></div>
+      <button id="inspDone" class="insp-btn primary">Done</button>
+    </div>
+  </aside>
+
+  <!-- Floating menu root -->
+  <div id="flyRoot" class="fly-root" aria-hidden="true"></div>
+
+  <!-- Logo Picker -->
+  <div id="logoPicker" class="logo-picker" role="dialog" aria-modal="true" aria-labelledby="lpTitle">
+    <div class="lp-panel">
+      <div class="lp-head"><span id="lpTitle">Choose a logo</span><div class="grow"></div><button id="lpClose" class="insp-btn">✖</button></div>
+      <div class="lp-body">
+        <div class="lp-preview">
+          <div class="big" id="lpBig"></div>
+          <div class="inline"><span class="hint">Live preview</span></div>
+          <div class="sep"></div>
+          <div class="inline"><span class="chip">Tip</span><span class="hint">“Auto Initials” uses the current Website Name.</span></div>
+        </div>
+        <div>
+          <div class="inline" style="margin-bottom:8px">
+            <input id="lpSearch" class="input" placeholder="Search logos…" style="flex:1" />
+            <button id="lpAuto" class="btn soft">Auto Initials</button>
+            <button id="lpReset" class="btn ghost">Minimal Gradient</button>
+          </div>
+          <div id="lpGrid" class="lp-grid"></div>
+        </div>
+      </div>
+      <div class="lp-foot">
+        <div class="grow"></div>
+        <button id="lpUse" class="btn primary">Use selected</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DateTime Picker root -->
+  <div id="dtpRoot" class="dtp-root" aria-hidden="true"></div>
+
+  <!-- Toast -->
+  <div id="appToast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ================= MODE ================= */
+let demoMode=false; const modeEditBtn=document.getElementById('modeEdit'), modeDemoBtn=document.getElementById('modeDemo');
+function applyMode(){
+  document.body.classList.toggle('demo-mode', demoMode);
+  modeEditBtn.classList.toggle('active', !demoMode);
+  modeDemoBtn.classList.toggle('active', demoMode);
+  const siteNameEl=document.getElementById('siteName');
+  siteNameEl.setAttribute('contenteditable', demoMode ? 'false' : 'true');
+  siteNameEl.title = demoMode ? 'Demo mode: editing disabled' : 'Click to edit';
+  document.getElementById('pageName').setAttribute('contenteditable', demoMode ? 'false' : 'true');
+  localStorage.setItem('hrsuite_demo', demoMode?'1':'0');
+  if(demoMode) closeInspector();
+  renderDebounced();
+}
+modeEditBtn.onclick=()=>{ demoMode=false; applyMode(); };
+modeDemoBtn.onclick=()=>{ demoMode=true; applyMode(); };
+document.addEventListener('keydown',e=>{ if(e.shiftKey && e.key.toLowerCase()==='d'){ demoMode=!demoMode; applyMode(); }});
+(function(){ demoMode = localStorage.getItem('hrsuite_demo')==='1'; applyMode(); })();
+
+/* ================= HELPERS ================= */
+const $=(s,d=document)=>d.querySelector(s), $$=(s,d=document)=>Array.from(d.querySelectorAll(s));
+const uid=()=>Math.random().toString(36).slice(2,10);
+function toast(msg){ const t=$('#appToast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1800); }
+function clamp(n,a,b){ return Math.max(a, Math.min(b, n)); }
+
+/* ================= SITE NAME + LOGO + FAVICON ================= */
+const siteNameEl=$('#siteName'), logoBox=$('#logoBox');
+function getInitials(name){ return (name||'').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase() || 'WN'; }
+function svgAutoInitials(name){
+  const initials=getInitials(name);
+  return `
+    <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <defs><linearGradient id="g" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#2563eb"/><stop offset="1" stop-color="#7c3aed"/></linearGradient></defs>
+      <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#g)"/>
+      <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" font-size="26" font-weight="800" fill="#fff" font-family="ui-sans-serif,system-ui,Segoe UI,Roboto">${initials}</text>
+    </svg>`;
+}
+function renderAutoInitials(){ logoBox.innerHTML = svgAutoInitials(siteNameEl.textContent.trim()); updateFaviconFromLogo(); }
+function saveBrand(){ localStorage.setItem('site_name', siteNameEl.textContent.trim()); localStorage.setItem('site_logo_html', logoBox.innerHTML); document.title = siteNameEl.textContent.trim()+' · Designer'; }
+function loadBrand(){
+  const n=localStorage.getItem('site_name'); if(n){ siteNameEl.textContent=n; document.title=n+' · Designer'; }
+  const h=localStorage.getItem('site_logo_html'); if(h){ logoBox.innerHTML=h; } else { renderAutoInitials(); }
+  updateFaviconFromLogo();
+}
+function updateFaviconFromLogo(){
+  const svg = logoBox.innerHTML || svgAutoInitials(siteNameEl.textContent.trim());
+  const encoded = 'data:image/svg+xml,' + encodeURIComponent(svg.replace(/\n+/g,''));
+  const link = document.getElementById('dynamic-favicon');
+  link.setAttribute('href', encoded);
+}
+siteNameEl.addEventListener('input', ()=>{ if(demoMode) return; renderAutoInitials(); saveBrand(); });
+siteNameEl.addEventListener('blur', ()=>{ if(demoMode) return; saveBrand(); });
+
+/* ================= Logo picker ================= */
+const logoPicker=$('#logoPicker'), lpGrid=$('#lpGrid'), lpClose=$('#lpClose'), lpAuto=$('#lpAuto'), lpReset=$('#lpReset'), lpBig=$('#lpBig'), lpSearch=$('#lpSearch'), lpUse=$('#lpUse');
+let lpSelectedIndex=0;
+const GENERIC_LOGOS = [
+  `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g1" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#2563eb"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><rect rx="14" x="4" y="4" width="56" height="56" fill="#0ea5e9" opacity=".08"/><path d="M8 40 Q22 18 34 28 T56 28 L56 56 H8 Z" fill="url(#g1)"/></svg>`,
+  `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g2" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#7c3aed"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#7c3aed" opacity=".06"/><g fill="url(#g2)"><circle cx="16" cy="32" r="6"/><circle cx="32" cy="16" r="6"/><circle cx="32" cy="48" r="6"/><circle cx="48" cy="32" r="6"/></g></svg>`,
+  `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g3" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#22c55e"/><stop offset="1" stop-color="#16a34a"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#16a34a" opacity=".08"/><path d="M14 38c10 2 26-10 36-24 2 20-12 34-26 36-4-2-8-6-10-12z" fill="url(#g3)"/></svg>`,
+  `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g4" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#f59e0b"/><stop offset="1" stop-color="#ef4444"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#f59e0b" opacity=".09"/><path d="M32 10l16 10v24L32 54 16 44V20z" fill="url(#g4)"/></svg>`,
+  `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g5" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#06b6d4"/><stop offset="1" stop-color="#3b82f6"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#3b82f6" opacity=".06"/><circle cx="32" cy="32" r="10" fill="url(#g5)"/><ellipse cx="32" cy="32" rx="22" ry="10" fill="none" stroke="#60a5fa" stroke-width="3"/></svg>`,
+  `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g6" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#10b981"/><stop offset="1" stop-color="#34d399"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#10b981" opacity=".07"/><path d="M14 46 L26 22 L38 40 L50 18 L54 46 Z" fill="url(#g6)"/></svg>`,
+  `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g7" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#06b6d4"/><stop offset="1" stop-color="#7c3aed"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#0ea5e9" opacity=".08"/><g fill="url(#g7)"><rect x="14" y="14" width="36" height="8" rx="3"/><rect x="14" y="28" width="36" height="8" rx="3"/><rect x="14" y="42" width="36" height="8" rx="3"/></g></svg>`,
+  `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g8" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#ef4444"/><stop offset="1" stop-color="#f97316"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="14" fill="#ef4444" opacity=".07"/><polyline points="10,34 22,34 28,20 36,48 42,30 54,30" fill="none" stroke="url(#g8)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g9" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#3b82f6"/><stop offset="1" stop-color="#22c55e"/></linearGradient></defs><rect x="6" y="6" width="52" height="52" rx="14" fill="#eef2ff"/><path d="M18 44 L32 18 L46 44 Z" fill="url(#g9)"/></svg>`,
+  `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g10" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#f43f5e"/><stop offset="1" stop-color="#6366f1"/></linearGradient></defs><rect x="6" y="6" width="52" height="52" rx="14" fill="#fff7ed"/><circle cx="32" cy="32" r="16" fill="url(#g10)"/></svg>`,
+  `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g11" x1="1" y="0" x2="0" y="1"><stop offset="0" stop-color="#06b6d4"/><stop offset="1" stop-color="#0ea5e9"/></linearGradient></defs><rect x="4" y="4" width="56" height="56" rx="16" fill="#ecfeff"/><path d="M16 40 C24 28, 40 28, 48 40" stroke="url(#g11)" stroke-width="8" fill="none" stroke-linecap="round"/></svg>`,
+  `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g12" x1="0" y="0" x2="1" y="1"><stop offset="0" stop-color="#a78bfa"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><rect x="5" y="5" width="54" height="54" rx="16" fill="#f5f3ff"/><rect x="18" y="18" width="28" height="28" rx="6" fill="url(#g12)"/></svg>`
+];
+let filteredLogos=[...GENERIC_LOGOS];
+function openLogoPicker(){
+  if(demoMode){ toast('Demo mode: logo editing is disabled'); return; }
+  filteredLogos=[...GENERIC_LOGOS]; lpSelectedIndex=0; paintLogoGrid(); logoPicker.classList.add('open'); lpBig.innerHTML = filteredLogos[0]; lpSearch.value='';
+}
+function closeLogoPicker(){ logoPicker.classList.remove('open'); }
+function paintLogoGrid(){
+  lpGrid.innerHTML='';
+  filteredLogos.forEach((svg,i)=>{
+    const card=document.createElement('button'); card.type='button'; card.className='lp-item'+(i===lpSelectedIndex?' active':'');
+    card.innerHTML=svg;
+    card.onclick=()=>{ lpSelectedIndex=i; paintLogoGrid(); lpBig.innerHTML=filteredLogos[lpSelectedIndex]; };
+    lpGrid.appendChild(card);
+  });
+}
+$('#logoBtn').addEventListener('click', openLogoPicker);
+logoBox.addEventListener('click', openLogoPicker);
+lpClose.onclick=closeLogoPicker;
+lpAuto.onclick=()=>{ if(demoMode){ toast('Demo mode: logo editing is disabled'); return; } lpBig.innerHTML = svgAutoInitials(siteNameEl.textContent.trim()); lpSelectedIndex=-1; };
+lpReset.onclick=()=>{ if(demoMode){ toast('Demo mode: logo editing is disabled'); return; } lpBig.innerHTML = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g0' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='#2563eb'/><stop offset='1' stop-color='#7c3aed'/></linearGradient></defs><rect x='2' y='2' width='60' height='60' rx='14' fill='url(#g0)'/></svg>`; lpSelectedIndex=-2; };
+lpSearch.oninput=()=>{ const q=lpSearch.value.trim().toLowerCase(); filteredLogos = GENERIC_LOGOS.filter((_,i)=>('logo '+(i+1)).includes(q) || !q); lpSelectedIndex=0; paintLogoGrid(); lpBig.innerHTML=filteredLogos[0]||''; };
+lpUse.onclick=()=>{ if(demoMode){ toast('Demo mode: logo editing is disabled'); return; } logoBox.innerHTML = lpBig.innerHTML; updateFaviconFromLogo(); saveBrand(); closeLogoPicker(); };
+loadBrand();
+
+/* ================= MODEL ================= */
+const Model={ items:[] };
+let current=null, selectedNodeId=null, targetSectionId=null;
+
+/* ================= NAV helpers ================= */
+function findParentOf(id, place){
+  let parent=null;
+  (function walk(list,p=null){
+    for(const n of list){
+      if(n.id===id){ parent=p; return; }
+      if(n.children?.length){ walk(n.children,n); if(parent) return; }
+    }
+  })(Model.items.filter(i=>i.place===place));
+  return parent;
+}
+function depthOfNode(place,id){
+  let depth=-1;
+  (function walk(list,d){
+    for(const n of list){
+      if(n.id===id){ depth=d; return; }
+      if(n.children?.length){ walk(n.children,d+1); if(depth!==-1) return; }
+    }
+  })(Model.items.filter(i=>i.place===place),0);
+  return depth;
+}
+function findNavNode(place,id){
+  let hit=null;
+  (function walk(list){
+    for(const n of list){
+      if(n.id===id){ hit=n; return; }
+      if(n.children?.length){ walk(n.children); if(hit) return; }
+    }
+  })(Model.items.filter(i=>i.place===place));
+  return hit;
+}
+function roots(place){
+  const ids=new Set(Model.items.filter(i=>i.place===place).map(i=>i.id));
+  Model.items.filter(i=>i.place===place).forEach(n=>{ const p=findParentOf(n.id,place); if(p) ids.delete(n.id); });
+  return Model.items.filter(i=>i.place===place && ids.has(i.id));
+}
+
+/* ================= HORIZONTAL RIBBON + FLYOUT ================= */
+const hRibbon=$('#hRibbon'), hPrev=$('#hPrev'), hNext=$('#hNext');
+hPrev.onclick=()=>hRibbon.scrollBy({left:-220,behavior:'smooth'}); hNext.onclick=()=>hRibbon.scrollBy({left:220,behavior:'smooth'});
+function checkRibbonOverflow(){ const need = hRibbon.scrollWidth > Math.ceil(hRibbon.clientWidth + 2); hPrev.hidden = hNext.hidden = !need; }
+
+/* build horizontal item */
+function buildHItem(node){
+  const wrap=document.createElement('div'); wrap.className='h-item'; wrap.dataset.id=node.id; wrap.dataset.place=node.place;
+  const hasChildren=(node.children?.length||0)>0;
+  const a=document.createElement('a'); a.href='#'; a.className='h-link'; a.innerHTML=`${node.icon?`<span class="h-ico">${node.icon}</span>`:''}<span>${node.name}</span>${hasChildren?'<span class="h-caret">▾</span>':''}`;
+  a.onclick=(e)=>{ e.preventDefault(); if(hasChildren){ openFlyMenu(node, a, 'below'); } else { openDesigner(node); } };
+  if(hasChildren){ const tag=document.createElement('span'); tag.className='container-tag'; tag.textContent='Container'; a.appendChild(tag); }
+  wrap.appendChild(a);
+  return wrap;
+}
+
+/* ================= VERTICAL NAV ================= */
+function buildVItem(node){
+  const li=document.createElement('li'); li.className='vitem'; li.dataset.id=node.id; li.dataset.place=node.place;
+  const hasChildren=(node.children?.length||0)>0;
+  const b=document.createElement('button'); b.className='vbtn';
+  b.innerHTML=`${node.icon?`<span class="ico">${node.icon}</span>`:'<span class="ico">•</span>'}<span>${node.name}</span>${hasChildren?'<span class="container-tag">Container</span>':''}`;
+  b.onclick=(e)=>{ e.preventDefault(); if(hasChildren){ openFlyMenu(node, b, 'right'); } else { openDesigner(node); } };
+  li.appendChild(b);
+  return li;
+}
+function setActive(){
+  const id=current?.id;
+  $$('#hRibbon .h-link').forEach(a=> a.classList.toggle('active', a.parentElement.dataset.id===id));
+  $$('#vNav .vbtn').forEach(b=> b.classList.toggle('active', b.parentElement.dataset.id===id));
+}
+
+/* ================= ADDERS ================= */
+const hAdder=$('#hAdder'), vAdder=$('#vAdder');
+const navNameH=$('#navNameH'), navParentH=$('#navParentH'), iconPreviewH=$('#iconPreviewH'), addNavBtnH=$('#addNavBtnH'), cancelNavH=$('#cancelNavH');
+const navNameV=$('#navNameV'), navParentV=$('#navParentV'), iconPreviewV=$('#iconPreviewV'), addNavBtnV=$('#addNavBtnV'), cancelNavV=$('#cancelNavV');
+
+hAdder.querySelector('button').onclick = (e)=>{ if(demoMode){ toast('Demo mode: editing disabled'); return; } e.stopPropagation(); populateParentSelect('h'); hAdder.classList.toggle('open'); hAdder.querySelector('button').setAttribute('aria-expanded', hAdder.classList.contains('open')?'true':'false'); };
+document.addEventListener('click', e=>{ if(!hAdder.contains(e.target)) { hAdder.classList.remove('open'); hAdder.querySelector('button').setAttribute('aria-expanded','false'); } });
+vAdder.querySelector('button').onclick = ()=>{ if(demoMode){ toast('Demo mode: editing disabled'); return; } vAdder.classList.toggle('open'); populateParentSelect('v'); };
+cancelNavH.onclick=()=>{ hAdder.classList.remove('open'); }; cancelNavV.onclick=()=>{ vAdder.classList.remove('open'); };
+
+function parentChoices(place){
+  const out=[{value:'',text:'(No parent — top level)'}];
+  (function walk(list,d){
+    list.filter(n=>n.place===place).forEach(n=>{
+      out.push({value:n.id,text:'—'.repeat(d)+' '+(n.icon? n.icon+' ':'')+n.name});
+      if(d<2 && n.children?.length) walk(n.children,d+1);
+    });
+  })(Model.items.filter(i=>i.place===place && !findParentOf(i.id,place)),0);
+  return out;
+}
+function populateParentSelect(place){
+  const sel=(place==='h')? navParentH : navParentV; sel.innerHTML='';
+  parentChoices(place).forEach(o=>{ const op=document.createElement('option'); op.value=o.value; op.textContent=o.text; sel.appendChild(op); });
+}
+function addNav(name, place, parentId, icon){
+  if(demoMode){ toast('Demo mode: structure editing is disabled'); return; }
+  const title=(name||'').trim(); if(!title) return;
+  const item={id:uid(),name:title,place,icon:(icon||'').trim(),children:[],root:defaultRootSection(title)};
+  if(!parentId){ Model.items.push(item); }
+  else{
+    const parent=findNavNode(place,parentId); if(!parent) return;
+    if(depthOfNode(place,parentId)>=2){ alert('Maximum depth is 3 levels.'); return; }
+    parent.children.push(item);
+  }
+  renderMenus(); openDesigner(item);
+}
+addNavBtnH.onclick=()=>{ addNav(navNameH.value,'h',navParentH.value||'',iconPreviewH.value); navNameH.value=''; iconPreviewH.value=''; hAdder.classList.remove('open'); };
+addNavBtnV.onclick=()=>{ addNav(navNameV.value,'v',navParentV.value||'',iconPreviewV.value); navNameV.value=''; iconPreviewV.value=''; vAdder.classList.remove('open'); };
+
+/* ================= Floating menu ================= */
+const flyRoot=$('#flyRoot');
+function openFlyMenu(node, anchorEl, mode){
+  closeFly();
+  const rect=anchorEl.getBoundingClientRect();
+  const root=document.createElement('div'); root.className='fly';
+  const left = mode==='right' ? rect.right+6 : Math.min(rect.left, window.innerWidth-340);
+  const top  = mode==='right' ? rect.top : rect.bottom+6;
+  positionPanel(root, top, left);
+  root.appendChild(buildFlyList(node.children));
+  flyRoot.appendChild(root);
+  flyRoot.classList.add('open');
+  flyRoot.onclick=(e)=>{ if(e.target===flyRoot) closeFly(); };
+  document.addEventListener('keydown', escCloseOnce);
+}
+function escCloseOnce(e){ if(e.key==='Escape'){ closeFly(); } }
+function closeFly(){ flyRoot.classList.remove('open'); flyRoot.innerHTML=''; document.removeEventListener('keydown', escCloseOnce); }
+function positionPanel(panel, top, left){
+  const w=panel.offsetWidth||300;
+  let L=left, T=top;
+  if(L+w>window.innerWidth-8) L=window.innerWidth-w-8;
+  if(T<8) T=8;
+  panel.style.left=L+'px'; panel.style.top=T+'px';
+}
+function buildFlyList(items){
+  const wrap=document.createElement('div');
+  items.forEach(it=>{
+    const row=document.createElement('div'); row.className='item'; row.innerHTML=`${it.icon?`<span>${it.icon}</span>`:''}<span>${it.name}</span>${(it.children?.length?'<span class="caret">▸</span>':'')}`;
+    row.onclick=(e)=>{ e.stopPropagation(); if(it.children?.length){ /* nested */ } else { openDesigner(it); closeFly(); } };
+    wrap.appendChild(row);
+    if(it.children?.length){
+      const sub=document.createElement('div'); sub.className='sub';
+      sub.appendChild(buildFlyList(it.children));
+      wrap.appendChild(sub);
+      row.addEventListener('mouseenter', ()=>{
+        row.classList.add('open');
+        const r=row.getBoundingClientRect(); sub.style.left=(r.right+6)+'px';
+        const height=sub.offsetHeight||280;
+        sub.style.top=Math.min(r.top, window.innerHeight-height-8)+'px';
+      });
+      row.addEventListener('mouseleave', ()=> row.classList.remove('open'));
+    }
+  });
+  return wrap;
+}
+
+/* ================= FORM / DESIGNER ================= */
+function defaultRootSection(title){
+  const root={id:uid(),type:'section',name:title+' · Section 1',description:'',span:4,children:[]};
+  if(/Feature One/i.test(title)){
+    root.children.push(
+      field('text','Full Name',true),
+      field('email','Work Email',true),
+      field('date','Start Date'),
+      options(field('dropdown','Department'),['Engineering','Design','HR','Finance','Sales','Support']),
+      field('text','Manager'),
+      divider(),
+      options(field('checkboxes','Equipment Needed'),['Laptop','Monitor','Keyboard','Headset']),
+      field('textarea','Notes')
+    );
+  }else if(/Feature Two/i.test(title)){
+    root.children.push(
+      field('text','Employee Name',true),
+      options(field('dropdown','Department'),['Engineering','Design','HR','Finance','Sales','Support']),
+      field('date','Expense Date'),
+      options(field('dropdown','Category'),['Travel','Meals','Supplies','Software','Other']),
+      field('number','Amount',true),
+      field('file','Receipt'),
+      divider(),
+      field('textarea','Description'),
+      options(field('radio','Payment Method'),['Reimburse to Payroll','Bank Transfer']),
+      options(field('checkboxes','Policy Acknowledgement'),['I confirm this expense complies with policy'])
+    );
+  }
+  return root;
+}
+function field(ftype,name,req=false){
+  return {
+    id:uid(), type:'field', name, ftype, span:2,
+    required:req, readonly:false, disabled:false,
+    placeholder:'', help:'', default:'',
+    min:'', max:'', step:'', minLen:'', maxLen:'', pattern:'',
+    labelPos:'left',
+    options:[], allowCustom:false,
+    btnStyle:'primary', btnAction:'none',
+    logic:{mode:'all',conditions:[]}
+  };
+}
+function divider(){ return {id:uid(),type:'divider',showLine:true}; }
+function options(node,arr){ node.options=arr.slice(); return node; }
+
+const pageHeader=$('#pageHeader'), formNote=$('#formNote');
+function getItem(){ return current && findNavNode(current.place,current.id); }
+function openDesigner(item){ current={id:item.id,place:item.place,name:item.name}; pageHeader.textContent=item.name; if(!item.root) item.root=defaultRootSection(item.name); if(!targetSectionId) targetSectionId=item.root.id; render(); }
+
+/* rename feature inline (no re-render until blur) */
+pageHeader.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); pageHeader.blur(); }});
+document.getElementById('pageName').addEventListener('blur', ()=>{
+  if(demoMode) return;
+  const it=getItem(); if(!it) return;
+  it.name = (pageHeader.textContent||'').trim() || it.name;
+  renderMenus(); setActive();
+});
+
+function render(){ renderForm(); setActive(); checkRibbonOverflow(); updateVisibility(); setTimeout(postRenderFocus,0); }
+function postRenderFocus(){
+  try{
+    const host=document.getElementById('formHost');
+    const cards=[...host.querySelectorAll('.fcard')];
+    if(!window.__cardCount) window.__cardCount = cards.length; window.__focusAdded = false;
+    if(window.__focusNextId){
+      const el=host.querySelector(`.fcard[data-nid="${window.__focusNextId}"]`);
+      if(el){ el.scrollIntoView({behavior:'smooth',block:'center'}); const span=el.querySelector('.label-editable'); (span||el).focus(); }
+      window.__focusNextId=null; window.__cardCount=cards.length; return;
+    }
+    if(window.__focusAdded || cards.length > window.__cardCount){
+      const el = cards[cards.length-1];
+      if(el){ el.scrollIntoView({behavior:'smooth', block:'center'}); const span=el.querySelector('.label-editable'); (span||el).focus(); }
+      window.__cardCount = cards.length; window.__focusAdded = false;
+    }
+  }catch{}
+}
+function renderForm(){
+  const item=getItem(); const host=$('#formHost'); host.innerHTML=''; if(!item) return;
+  host.appendChild(renderSection(item.root));
+}
+
+function renderSection(sec){
+  const wrap=document.createElement('div'); wrap.className='section'; wrap.dataset.nid=sec.id;
+
+  const head=document.createElement('div'); head.className='section-title';
+  const titleEl=document.createElement('div'); titleEl.className='section-name label-editable'; titleEl.textContent=sec.name;
+  titleEl.contentEditable = !demoMode;
+  titleEl.onkeydown=(e)=>{ if(e.key==='Enter'){ e.preventDefault(); titleEl.blur(); } };
+  titleEl.addEventListener('mousedown', (e)=>{ e.stopPropagation(); });
+  titleEl.addEventListener('click', (e)=>{ e.stopPropagation(); });
+  titleEl.onblur=()=>{ if(demoMode) return; const v=(titleEl.textContent||'').trim(); if(v && v!==sec.name){ sec.name=v; render(); } };
+  head.appendChild(titleEl);
+  const tools=document.createElement('div'); tools.className='section-toolbar';
+
+  const editBtn=document.createElement('button'); editBtn.className='stool'; editBtn.textContent='✏️ Edit';
+  editBtn.onclick=()=>{ if(!demoMode){ selectedNodeId=sec.id; openInspector(sec.id); } else toast('Demo mode: editing disabled'); };
+  const delBtn=document.createElement('button'); delBtn.className='stool'; delBtn.textContent='🗑️ Delete';
+  delBtn.onclick=()=>{ if(demoMode){ toast('Demo mode: editing disabled'); return; } deleteNode(sec.id); };
+
+  const targetBtn=document.createElement('button'); targetBtn.className='stool'; targetBtn.textContent='🎯 Target';
+  targetBtn.onclick=()=>{ if(!demoMode) setTarget(sec.id); else toast('Demo mode: editing disabled'); };
+
+  const addFieldBtn=document.createElement('button'); addFieldBtn.className='stool'; addFieldBtn.textContent='＋ Field';
+  addFieldBtn.onclick=()=>{ if(!demoMode){ const n=field('text','Field'); sec.children.push(n); render(); openInspector(n.id); } else toast('Demo mode: editing disabled'); };
+
+  const addSecBtn=document.createElement('button'); addSecBtn.className='stool'; addSecBtn.textContent='＋ Section';
+  addSecBtn.onclick=()=>{ if(!demoMode){ const n={id:uid(),type:'section',name:'Section',description:'',span:4,children:[]}; sec.children.push(n); render(); openInspector(n.id); } else toast('Demo mode: editing disabled'); };
+
+  const addDivBtn=document.createElement('button'); addDivBtn.className='stool'; addDivBtn.textContent='— Divider';
+  addDivBtn.onclick=()=>{ if(!demoMode){ sec.children.push(divider()); render(); } else toast('Demo mode: editing disabled'); };
+
+  tools.append(editBtn, delBtn, targetBtn, addFieldBtn, addSecBtn, addDivBtn);
+  head.appendChild(tools); wrap.appendChild(head);
+
+  const grid=document.createElement('div'); grid.className='grid4'; wrap.appendChild(grid);
+  const cols = matchMedia('(max-width:640px)').matches ? 1 : matchMedia('(max-width:1024px)').matches ? 2 : 4;
+
+  for(const node of sec.children){
+    if(node.type==='divider'){
+      const box=document.createElement('div'); box.className='divider-card'; box.style.gridColumn='1/-1'; box.dataset.nid=node.id;
+      const bar=document.createElement('div'); bar.className='icons';
+      const e=document.createElement('button'); e.className='icon-btn';
+try{ if(!e.getAttribute('aria-label')) e.setAttribute('aria-label', e.getAttribute('title') || e.textContent || 'action'); }catch(e){}; e.textContent='✏️';
+      e.onclick=(ev)=>{ ev.stopPropagation(); if(!demoMode){ selectedNodeId=node.id; openInspector(node.id); } else toast('Demo mode: editing disabled'); };
+      const d=document.createElement('button'); d.className='icon-btn icon-del'; d.textContent='🗑️';
+      d.onclick=(ev)=>{ ev.stopPropagation(); if(!demoMode){ deleteNode(node.id); } else toast('Demo mode: editing disabled'); };
+      bar.append(e,d); box.appendChild(bar);
+      const hr=document.createElement('hr'); box.appendChild(hr);
+      grid.appendChild(box);
+      continue;
+    }
+    if(node.type==='section'){ const s=renderSection(node); s.style.gridColumn='span '+Math.min(cols,node.span||4); grid.appendChild(s); continue; }
+
+    const span=Math.max(1, Math.min(cols, Number(node.span)||2));
+    const fc=renderField(node); fc.style.gridColumn='span '+span; grid.appendChild(fc);
+  }
+  return wrap;
+}
+
+function renderField(fd){
+  const card=document.createElement('div'); card.className='fcard'; card.dataset.nid=fd.id;
+  try{ if(typeof passesLogic==='function' && typeof demoMode!=='undefined'){ if(demoMode){ card.style.display = passesLogic(fd)? '' : 'none'; } } }catch{}
+  const bar=document.createElement('div'); bar.className='icons';
+  const edit=document.createElement('button'); edit.className='icon-btn';
+try{ if(!edit.getAttribute('aria-label')) edit.setAttribute('aria-label', edit.getAttribute('title') || edit.textContent || 'action'); }catch(e){}; edit.title='Edit basics'; edit.textContent='✏️';
+  const validation=document.createElement('button'); validation.className='icon-btn';
+try{ if(!validation.getAttribute('aria-label')) validation.setAttribute('aria-label', validation.getAttribute('title') || validation.textContent || 'action'); }catch(e){}; validation.title='Validation'; validation.textContent='✅';
+  const bolt=document.createElement('button'); bolt.className='icon-btn';
+try{ if(!bolt.getAttribute('aria-label')) bolt.setAttribute('aria-label', bolt.getAttribute('title') || bolt.textContent || 'action'); }catch(e){}; bolt.title='Conditions'; bolt.textContent='⚡';
+  const del=document.createElement('button'); del.className='icon-btn icon-del'; del.title='Delete'; del.textContent='🗑️';
+  bar.append(edit,validation,bolt,del); card.appendChild(bar);
+
+  const wrapper=document.createElement('div'); wrapper.className='preview-form';
+  const row=document.createElement('div'); row.className='field';
+
+  if(fd.ftype!=='button'){
+    const label=document.createElement('label'); label.htmlFor='f_'+fd.id;
+    const span=document.createElement('span'); span.className='label-editable'; span.textContent=fd.name;
+    span.setAttribute('contenteditable', demoMode ? 'false' : 'true');
+    span.onkeydown=(e)=>{ if(e.key==='Enter'){ e.preventDefault(); span.blur(); } };
+    span.onblur=()=>{ if(demoMode) return; fd.name = (span.textContent||'').trim() || fd.name; render(); };
+    span.tabIndex=0; span.addEventListener('mousedown',(e)=>{e.stopPropagation(); e.preventDefault();});
+    span.addEventListener('click',(e)=>{e.stopPropagation(); e.preventDefault(); span.focus();});
+    const star=document.createElement('span'); star.textContent=fd.required?' *':'';
+    star.style.color='#b91c1c'; star.style.marginLeft='4px';
+    label.append(span, star);
+    if(fd.labelPos==='top'){ row.style.gridTemplateColumns='1fr'; label.style.marginBottom='2px'; }
+    if(fd.labelPos==='hidden'){ label.style.display='none'; }
+    row.appendChild(label);
+  }
+
+  const host=document.createElement('div'); host.style.display='flex'; host.style.alignItems='center'; host.style.gap='6px'; host.style.flexWrap='wrap';
+  host.appendChild(buildControl(fd)); row.appendChild(host); wrapper.appendChild(row); card.appendChild(wrapper);
+
+  edit.onclick=(e)=>{ e.stopPropagation(); if(!demoMode){ selectedNodeId=fd.id; openInspector(fd.id); } else toast('Demo mode: editing disabled'); };
+  validation.onclick=(e)=>{
+    e.stopPropagation();
+    if(!demoMode){
+      try{ card.scrollIntoView({behavior:'smooth', block:'center'}); }catch{}
+      if(window.openInspectorAndTab){ openInspectorAndTab(fd.id, 'Validation'); }
+      else { selectNode(fd.id); openInspector(fd.id); }
+    } else toast('Demo mode: editing disabled');
+  };
+  bolt.onclick=(e)=>{
+    e.stopPropagation();
+    if(!demoMode){
+      try{ card.scrollIntoView({behavior:'smooth', block:'center'}); }catch{}
+      if(window.openInspectorAndTab){ openInspectorAndTab(fd.id, 'Visibility'); }
+      else { selectNode(fd.id); openInspector(fd.id); }
+    } else toast('Demo mode: editing disabled');
+  };
+
+  del.onclick=(e)=>{ e.stopPropagation(); if(!demoMode){ confirmDialog({title:'Delete field?', name: fd.name || '', showName:true, body:'This cannot be undone.', confirmText:'Delete', tone:'danger', icon:'🗑️'}).then(ok=>{ if(ok) deleteNode(fd.id); }); } else toast('Demo mode: editing disabled'); };
+
+  return card;
+}
+
+function buildControl(fd){
+  const t=(fd.ftype||'text').toLowerCase();
+  const set=(el)=>{ if(fd.placeholder) el.placeholder=fd.placeholder; if(fd.required) el.required=true; if(fd.readonly) el.readOnly=true; if(fd.disabled) el.disabled=true; if(fd.default!=='' && !['radio','checkboxes','toggle','range','rating','button'].includes(t)) try{ el.value=fd.default; }catch{}; if(fd.min) el.min=fd.min; if(fd.max) el.max=fd.max; if(fd.step) el.step=fd.step; if(fd.minLen) el.minLength=fd.minLen; if(fd.maxLen) el.maxLength=fd.maxLen; if(fd.pattern) el.pattern=fd.pattern; };
+  if(t==='button'){
+    const b=document.createElement('button'); b.type='button';
+    const styleClass = (fd.btnStyle==='ghost'||fd.btnStyle==='danger'||fd.btnStyle==='link') ? fd.btnStyle : 'primary';
+    b.className='btn '+styleClass;
+    b.textContent=fd.name||'Button';
+    b.onclick=()=>{ if(fd.btnAction==='submit') doSubmit(); else if(fd.btnAction==='reset') doReset(); };
+    return b;
+  }
+  if(['text','email','tel','url','password','number','date','time','color'].includes(t)){ const i=document.createElement('input'); i.type=t; set(i); i.id='f_'+fd.id; return i; }
+  if(t==='datetime'){
+    const wrap=document.createElement('div'); wrap.style.position='relative'; wrap.style.width='100%';
+    const i=document.createElement('input'); i.type='text'; i.className='input dtp-input'; i.placeholder=fd.placeholder||'YYYY-MM-DD HH:MM:SS'; i.readOnly=true; i.id='f_'+fd.id;
+    set(i); if(fd.default) i.value=fd.default;
+    const ico=document.createElement('button'); ico.type='button'; ico.className='btn ghost'; ico.textContent='🕒'; ico.style.height='var(--ctrl-h)';
+    ico.onclick=()=>openDTP(i);
+    i.onclick=()=>openDTP(i);
+    wrap.append(i,ico);
+    return wrap;
+  }
+  if(t==='textarea'){ const ta=document.createElement('textarea'); set(ta); ta.id='f_'+fd.id; return ta; }
+  
+ 
+ 
+ 
+ 
+  if(t==='file'){
+    // Persist & settings
+    fd.files = Array.isArray(fd.files) ? fd.files : [];
+    fd.accept = fd.accept || "image/*,application/pdf,text/html";
+    fd.maxSizeMB = (typeof fd.maxSizeMB==='number' && fd.maxSizeMB>0) ? fd.maxSizeMB : 20;
+    fd.maxFiles = (typeof fd.maxFiles==='number' && fd.maxFiles>=0) ? fd.maxFiles : 0;
+    fd.multiple = (typeof fd.multiple==='boolean') ? fd.multiple : true;
+    const files = fd.files;
+
+    const wrap = document.createElement('div');
+    const i = document.createElement('input'); i.type='file'; i.multiple=!!fd.multiple; i.accept=fd.accept; i.style.display='none';
+    const btn = document.createElement('button'); btn.type='button'; btn.className='btn'; btn.textContent='Manage files ('+(files.length||0)+')';
+    wrap.append(btn, i);
+
+    function updateBtn(){ btn.textContent = 'Manage files ('+files.length+')'; }
+    function addFile(f){
+      const url = URL.createObjectURL(f);
+      const kind = f.type.startsWith('image/') ? 'image' : (f.type==='application/pdf' ? 'pdf' : 'html');
+      files.push({name:f.name, type:f.type, size:f.size, url, kind});
+      updateBtn();
+    }
+    function handleFiles(list){ Array.from(list||[]).forEach(addFile); updateBtn(); }
+    function onUpdate(){ updateBtn(); }
+
+    btn.onclick = ()=> openFileManager({accept: fd.accept, maxSizeMB: fd.maxSizeMB, maxFiles: fd.maxFiles, multiple: fd.multiple, htmlSandbox: true}, files, onUpdate);
+    i.onchange = ()=>{ if(i.files && i.files.length){ Array.from(i.files).forEach(addFile); openFileManager({accept: fd.accept, maxSizeMB: fd.maxSizeMB, maxFiles: fd.maxFiles, multiple: fd.multiple, htmlSandbox: true}, files, onUpdate); } };
+
+    wrap.addEventListener('dragover', (e)=>{ e.preventDefault(); });
+    wrap.addEventListener('drop', (e)=>{ e.preventDefault(); if(e.dataTransfer && e.dataTransfer.files){ Array.from(e.dataTransfer.files).forEach(addFile); openFileManager({accept: fd.accept, maxSizeMB: fd.maxSizeMB, maxFiles: fd.maxFiles, multiple: fd.multiple, htmlSandbox: true}, files, onUpdate); } });
+
+    return wrap;
+  }
+
+  if(t==='range'){ const wrap=document.createElement('div'); wrap.style.display='flex'; wrap.style.gap='8px'; const s=document.createElement('input'); s.type='range'; if(fd.min) s.min=fd.min; if(fd.max) s.max=fd.max; if(fd.step) s.step=fd.step; const out=document.createElement('span'); out.className='hint'; s.value=fd.default||s.min||0; out.textContent=s.value; s.oninput=()=>out.textContent=s.value; wrap.append(s,out); return wrap; }
+  
+  if(t==='dropdown' || t==='multiselect'){
+    const wrap=document.createElement('div');
+    const sel=document.createElement('select'); sel.className='select'; sel.multiple = (t==='multiselect');
+    function syncSelect(){
+      sel.innerHTML='';
+      (fd.options||[]).forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o); });
+    }
+    syncSelect();
+    sel.id='f_'+fd.id; wrap.appendChild(sel);
+    if(!demoMode){
+      const chips=document.createElement('div'); chips.className='opt-chips';
+      function renderChips(){
+        chips.innerHTML='';
+        (fd.options||[]).forEach((v,idx)=>{
+          const chip=document.createElement('span'); chip.className='opt-chip';
+          const txt=document.createElement('span'); txt.className='txt'; txt.contentEditable='true'; txt.textContent=v;
+          txt.onkeydown=(e)=>{ if(e.key==='Enter'){ e.preventDefault(); txt.blur(); } };
+          txt.onblur=()=>{ const nv=(txt.textContent||'').trim(); if(nv && nv!==v){ fd.options[idx]=nv; syncSelect(); } else { txt.textContent=fd.options[idx]||v; } };
+          const rm=document.createElement('button'); rm.type='button'; rm.className='rm'; rm.title='Remove'; rm.textContent='×';
+          rm.onclick=()=>{ fd.options.splice(idx,1); renderChips(); syncSelect(); };
+          chip.append(txt, rm); chips.appendChild(chip);
+        });
+        const add=document.createElement('button'); add.type='button'; add.className='btn ghost opt-add'; add.textContent='+ Add option';
+        add.onclick=()=>{ fd.options = Array.isArray(fd.options)?fd.options:[]; fd.options.push('Option '+(fd.options.length+1)); renderChips(); syncSelect(); };
+        chips.appendChild(add);
+      }
+      renderChips();
+      wrap.appendChild(chips);
+    }
+    return wrap;
+  }
+
+  
+  if(t==='radio' || t==='checkboxes'){
+    const wrap=document.createElement('div');
+    const row=document.createElement('div'); row.className='inline'; row.style.gap='12px'; row.style.flexWrap='wrap';
+    function syncGroup(){
+      row.innerHTML='';
+      (fd.options||[]).forEach(v=>{
+        const lab=document.createElement('label'); lab.className='inline';
+        const inp=document.createElement('input'); inp.type=(t==='radio')?'radio':'checkbox'; inp.name='f_'+fd.id;
+        const sp=document.createElement('span'); sp.textContent=v;
+        lab.append(inp, sp); row.appendChild(lab);
+      });
+    }
+    syncGroup();
+    wrap.appendChild(row);
+    if(!demoMode){
+      const chips=document.createElement('div'); chips.className='opt-chips';
+      function renderChips(){
+        chips.innerHTML='';
+        (fd.options||[]).forEach((v,idx)=>{
+          const chip=document.createElement('span'); chip.className='opt-chip';
+          const txt=document.createElement('span'); txt.className='txt'; txt.contentEditable='true'; txt.textContent=v;
+          txt.onkeydown=(e)=>{ if(e.key==='Enter'){ e.preventDefault(); txt.blur(); } };
+          txt.onblur=()=>{ const nv=(txt.textContent||'').trim(); if(nv && nv!==v){ fd.options[idx]=nv; syncGroup(); } else { txt.textContent=fd.options[idx]||v; } };
+          const rm=document.createElement('button'); rm.type='button'; rm.className='rm'; rm.title='Remove'; rm.textContent='×';
+          rm.onclick=()=>{ fd.options.splice(idx,1); renderChips(); syncGroup(); };
+          chip.append(txt, rm); chips.appendChild(chip);
+        });
+        const add=document.createElement('button'); add.type='button'; add.className='btn ghost opt-add'; add.textContent='+ Add option';
+        add.onclick=()=>{ fd.options = Array.isArray(fd.options)?fd.options:[]; fd.options.push('Option '+(fd.options.length+1)); renderChips(); syncGroup(); };
+        chips.appendChild(add);
+      }
+      renderChips();
+      wrap.appendChild(chips);
+    }
+    return wrap;
+  }
+
+  if(t==='toggle'){
+    const lab=document.createElement('label'); lab.className='toggle';
+    const inp=document.createElement('input'); inp.type='checkbox'; if(String(fd.default)==='true') inp.checked=true;
+    const track=document.createElement('span'); track.className='track';
+    const thumb=document.createElement('span'); thumb.className='thumb'; track.appendChild(thumb);
+    lab.append(inp, track);
+    if(fd.placeholder){ const txt=document.createElement('span'); txt.textContent=fd.placeholder; txt.style.fontWeight='600'; lab.appendChild(txt); }
+    return lab;
+  }
+    if(t==='paragraph'){
+    const wrap=document.createElement('div');
+    wrap.className='rich-wrap';
+    const bar=document.createElement('div');
+    bar.style.display='flex'; bar.style.gap='6px'; bar.style.flexWrap='wrap'; bar.style.marginBottom='6px';
+    function mk(cmd,txt){ const b=document.createElement('button'); b.type='button'; b.className='btn ghost'; b.textContent=txt; b.onclick=()=>{ document.execCommand(cmd,false,null); host.focus(); updateVisibility(); }; return b; }
+    bar.append(mk('bold','B'), mk('italic','I'), mk('underline','U'), mk('insertUnorderedList','• List'));
+    const host=document.createElement('div'); host.contentEditable='true'; host.id='f_'+fd.id;
+    host.style.minHeight='120px'; host.style.border='1px solid var(--line)'; host.style.borderRadius='8px'; host.style.padding='10px'; host.style.background='#fff';
+    host.innerHTML = fd.default || '';
+    host.addEventListener('input', ()=>{ try{ updateVisibility(); }catch{} });
+    wrap.append(bar, host);
+    return wrap;
+  }
+  const i=document.createElement('input'); i.type='text'; set(i); i.id='f_'+fd.id; return i;
+}
+
+/* =============== Inspector (Basics · Validation · Visibility) =============== */
+const insp=$('#inspector'), inspTitle=$('#inspTitle'), inspBody=$('#inspBody'), inspTabs=$('#inspTabs');
+const inspClose=$('#inspClose'), inspDone=$('#inspDone'), inspUp=$('#inspUp'), inspDown=$('#inspDown'), inspDup=$('#inspDup'), inspDel=$('#inspDel');
+inspClose.onclick=()=>insp.classList.remove('open'); inspDone.onclick=()=>insp.classList.remove('open');
+
+/* Close inspector when clicking outside */
+document.addEventListener('mousedown', (e)=>{
+  if(!insp.classList.contains('open')) return;
+  const clickedInside = insp.contains(e.target);
+  const isEditButton = e.target.closest('.icon-btn') || e.target.closest('.stool'); // edit buttons
+  if(!clickedInside && !isEditButton){ insp.classList.remove('open'); }
+});
+
+function openInspector(id){
+  if(demoMode) return;
+  const item=getItem(); if(!item) return;
+  function find(root,id,p=null){ if(root.id===id) return {node:root,parent:p}; if(root.type==='section'){ for(const c of root.children){ const r=find(c,id,root); if(r) return r; } } return null; }
+  const hit=find(item.root,id); if(!hit) return; const node=hit.node;
+  selectedNodeId=id; highlightSelected();
+
+  inspTitle.textContent = node.type==='field'?'Field':node.type==='section'?'Section':'Divider';
+  inspTabs.innerHTML=''; inspBody.innerHTML='';
+
+  const tabs = node.type==='field'
+    ? [{key:'basics',label:'Basics'},{key:'validation',label:'Validation'},{key:'visibility',label:'Visibility'}]
+    : [{key:'basics',label:'Basics'}];
+
+  tabs.forEach((t,i)=>{
+    const b=document.createElement('button'); b.className='insp-tab'+(i===0?' active':''); b.textContent=t.label; b.onclick=()=>{ $$('.insp-tab',inspTabs).forEach(x=>x.classList.remove('active')); b.classList.add('active'); paintInspectorPane(t.key,node,hit); };
+    inspTabs.appendChild(b);
+  });
+  insp.classList.add('open');
+  paintInspectorPane(tabs[0].key,node,hit);
+
+  // actions
+  inspDel.onclick=()=>{ if(demoMode){ toast('Demo mode: editing disabled'); return; } if(!confirm('Delete this item?')) return; if(!hit.parent) return; hit.parent.children = hit.parent.children.filter(x=>x.id!==node.id); render(); insp.classList.remove('open'); };
+  inspDup.onclick=()=>{ if(demoMode){ toast('Demo mode: editing disabled'); return; } const copy=JSON.parse(JSON.stringify(node)); (function ids(n){ n.id=uid(); if(n.children) n.children.forEach(ids); })(copy); hit.parent.children.splice(hit.parent.children.indexOf(node)+1,0,copy); render(); };
+  inspUp.onclick=()=>{ if(demoMode){ toast('Demo mode: editing disabled'); return; } const idx=hit.parent.children.indexOf(node); if(idx>0){ [hit.parent.children[idx-1],hit.parent.children[idx]]=[hit.parent.children[idx],hit.parent.children[idx-1]]; render(); } };
+  inspDown.onclick=()=>{ if(demoMode){ toast('Demo mode: editing disabled'); return; } const idx=hit.parent.children.indexOf(node); if(idx<hit.parent.children.length-1){ [hit.parent.children[idx+1],hit.parent.children[idx]]=[hit.parent.children[idx],hit.parent.children[idx+1]]; render(); } };
+}
+function highlightSelected(){ $$('.fcard,.section,.divider-card').forEach(el=> el.classList.toggle('selected', el.dataset.nid===selectedNodeId)); }
+
+/* === Live label updater (keep caret) === */
+function updateFieldLabelText(fieldId, text){
+  const span = document.querySelector(`.fcard[data-nid="${fieldId}"] .label-editable`);
+  if(span) span.textContent = text || '';
+}
+
+/* small UI helpers for inspector rows */
+function row(lbl, el){ const r=document.createElement('div'); r.className='insp-row'; const l=document.createElement('div'); l.className='label'; l.textContent=lbl; r.append(l,el); return r; }
+function input(val,on){ const i=document.createElement('input'); i.className='input'; i.value=val??''; i.oninput=()=>on(i.value); return i; }
+function num(val,on){ const i=document.createElement('input'); i.className='input'; i.type='number'; i.value=val??''; i.oninput=()=>on(i.value); return i; }
+function select(opts,val,on){ const s=document.createElement('select'); s.className='select'; opts.forEach(o=>{ const op=document.createElement('option'); op.value=o; op.textContent=o; s.appendChild(op);}); s.value=val; s.onchange=()=>on(s.value); return s; }
+function checkbox(label,checked,on){ const w=document.createElement('label'); w.className='inline'; const c=document.createElement('input'); c.type='checkbox'; c.checked=!!checked; c.onchange=()=>on(c.checked); const t=document.createElement('span'); t.textContent=' '+label; w.append(c,t); return w; }
+function wrap(...els){ const d=document.createElement('div'); d.className='inline'; els.forEach(e=>d.appendChild(e)); return d; }
+function newChip(txt){ const c=document.createElement('span'); c.className='chip'; c.textContent=txt; return c; }
+
+function paintInspectorPane(which,node,hit){
+  inspBody.innerHTML='';
+  if(which==='basics'){
+    if(node.type==='field'){
+      // Field label input — no re-render while typing
+      (() => {
+        const el = input(node.name, v => { node.name = v; updateFieldLabelText(node.id, v); });
+        el.addEventListener('blur', () => { render(); openInspector(node.id); });
+        inspBody.append(row('Label', el));
+      })();
+
+      inspBody.append(row('Type', select(['text','textarea','number','email','tel','url','password','date','time','datetime','color','dropdown','multiselect','radio','checkboxes','toggle','range','file','rating','button'], node.ftype, v=>{node.ftype=v; if(['dropdown','multiselect','radio','checkboxes'].includes(v) && (!node.options||!node.options.length)) node.options=['Option 1','Option 2','Option 3']; render(); openInspector(node.id);})));
+      if(['dropdown','multiselect','radio','checkboxes'].includes(node.ftype)){
+        const ta=document.createElement('textarea'); ta.className='textarea'; ta.style.height='120px'; ta.placeholder='One option per line'; ta.value=(node.options||[]).join('\n');
+        ta.oninput=()=>{ node.options = ta.value.split('\n').map(s=>s.trim()).filter(Boolean); render(); };
+        const inline=checkbox('Inline choices', node.inlineChoices||false, v=>{ node.inlineChoices=v; render();});
+        const allowC=checkbox('Allow user to enter custom option', node.allowCustom||false, v=>{ node.allowCustom=v; render();});
+        inspBody.append(row('Options', ta), row('Display', wrap(inline, allowC)));
+      }
+      inspBody.append(row('Placeholder', input(node.placeholder||'',v=>{node.placeholder=v; render();})));
+      inspBody.append(row('Help text', input(node.help||'',v=>{node.help=v; render();})));
+      inspBody.append(row('Label position', select(['left','top','hidden'], node.labelPos||'left', v=>{node.labelPos=v; render();})));
+      inspBody.append(row('Span (1-4 cols)', num(node.span||2,v=>{node.span=clamp(Number(v)||2,1,4); render();})));
+      if(node.ftype==='button'){
+        inspBody.append(row('Button style', select(['primary','ghost','danger','link'], node.btnStyle||'primary', v=>{node.btnStyle=v; render();})));
+        inspBody.append(row('Button action', select(['none','submit','reset'], node.btnAction||'none', v=>{node.btnAction=v; render();})));
+      }
+    } else if(node.type==='section'){
+      // Section title: no re-render while typing; update live DOM title
+      const el = input(node.name, v => {
+        node.name = v;
+        const domTitle = document.querySelector(`.section[data-nid="${node.id}"] .section-name`);
+        if(domTitle) domTitle.textContent = v;
+      });
+      el.addEventListener('blur', ()=>{ render(); openInspector(node.id); });
+      inspBody.append(row('Title', el));
+
+      const area=document.createElement('textarea'); area.className='textarea'; area.value=node.description||''; area.oninput=()=>{node.description=area.value;};
+      area.addEventListener('blur', ()=>{ render(); openInspector(node.id); });
+      inspBody.append(row('Description', area));
+      inspBody.append(row('Span (1-4 cols)', num(node.span||4,v=>{node.span=clamp(Number(v)||4,1,4); render();})));
+    } else {
+      const chk=document.createElement('input'); chk.type='checkbox'; chk.checked=node.showLine; chk.onchange=()=>{node.showLine=chk.checked; render();};
+      inspBody.append(row('Show line', wrap(chk)));
+    }
+  }
+
+  if(which==='validation' && node.type==='field'){
+    const req=checkbox('Required', !!node.required, v=>{node.required=v; render();});
+    const ro =checkbox('Read-only', !!node.readonly, v=>{node.readonly=v; render();});
+    const dis=checkbox('Disabled', !!node.disabled, v=>{node.disabled=v; render();});
+    inspBody.append(row('Flags', wrap(req,ro,dis)));
+    inspBody.append(row('Min', input(node.min||'',v=>{node.min=v; render();})));
+    inspBody.append(row('Max', input(node.max||'',v=>{node.max=v; render();})));
+    inspBody.append(row('Step', input(node.step||'',v=>{node.step=v; render();})));
+    inspBody.append(row('Min length', input(node.minLen||'',v=>{node.minLen=v; render();})));
+    inspBody.append(row('Max length', input(node.maxLen||'',v=>{node.maxLen=v; render();})));
+    inspBody.append(row('Regex pattern', input(node.pattern||'',v=>{node.pattern=v; render();})));
+    
+    // File field settings
+    if(node.ftype==='file'){
+      // Defaults
+      node.accept = node.accept || "image/*,application/pdf,text/html";
+      node.maxSizeMB = (typeof node.maxSizeMB==='number' && node.maxSizeMB>0) ? node.maxSizeMB : 20;
+      node.maxFiles = (typeof node.maxFiles==='number' && node.maxFiles>=0) ? node.maxFiles : 0;
+      node.multiple = (typeof node.multiple==='boolean') ? node.multiple : true;
+
+      const chipsWrap = document.createElement('div');
+      function chip(label, val){
+        const b=document.createElement('button'); b.type='button'; b.className='btn ghost'; b.textContent=label;
+        function selected(){ return (node.accept||'').split(',').map(s=>s.trim()).includes(val); }
+        function sync(){ b.classList.toggle('active', selected()); }
+        b.onclick=()=>{
+          const list=(node.accept||'').split(',').map(s=>s.trim()).filter(Boolean);
+          const idx=list.indexOf(val);
+          if(idx>=0) list.splice(idx,1); else list.push(val);
+          node.accept=list.join(','); render();
+          sync();
+        };
+        sync();
+        return b;
+      }
+      const imgC=chip('Images','image/*'), pdfC=chip('PDF','application/pdf'), htmlC=chip('HTML','text/html');
+      const custom=input(node.accept||'', v=>{ node.accept=v; render(); });
+      custom.placeholder="Custom accept (e.g., application/zip,.csv)";
+      chipsWrap.append(imgC,pdfC,htmlC);
+      inspBody.append(row('Allowed types', wrap(chipsWrap, custom)));
+      inspBody.append(row('Max file size (MB)', num(node.maxSizeMB, v=>{ node.maxSizeMB = Math.max(1, Number(v)||20); render(); })));
+      inspBody.append(row('Max files (0 = unlimited)', num(node.maxFiles, v=>{ node.maxFiles = Math.max(0, Number(v)||0); render(); })));
+      const mult=checkbox('Allow multiple', !!node.multiple, v=>{ node.multiple=v; render(); });
+      inspBody.append(row('Multiple', mult));
+    }
+    const defLbl = ['radio','checkboxes','toggle','range','rating','button'].includes(node.ftype) ? 'Default (see field)' : 'Default value';
+    inspBody.append(row(defLbl, input(node.default||'',v=>{node.default=v; render();})));
+  }
+
+  if(which==='visibility' && node.type==='field'){
+    const modeSel=select(['all','any'], node.logic?.mode||'all', v=>{node.logic.mode=v; updateVisibility();});
+    inspBody.append(row('Match conditions', wrap(newChip('Show when'),modeSel,newChip('conditions are true'))));
+    const list=document.createElement('div'); list.style.display='grid'; list.style.gap='8px';
+    const fields = allFieldsExcept(node.id).map(f=>({id:f.id,label:f.name,type:f.ftype}));
+    const opsFor = (t)=> (t==='number'||t==='date'||t==='time'||t==='datetime') ? ['=','!=','>','<','>=','<=','contains','notcontains']
+                 : (t==='checkboxes'||t==='multiselect'||t==='radio'||t==='dropdown') ? ['=','!=','contains','notcontains']
+                 : ['=','!=','contains','notcontains','>','<'];
+    node.logic = node.logic || {mode:'all',conditions:[]};
+    node.logic.conditions = node.logic.conditions || [];
+    node.logic.conditions.forEach((c,idx)=>{
+      const rowEl=document.createElement('div'); rowEl.className='inline'; rowEl.style.flexWrap='wrap';
+      const fSel=document.createElement('select'); fSel.className='select'; fSel.style.minWidth='160px';
+      fields.forEach(fi=>{ const op=document.createElement('option'); op.value=fi.id; op.textContent=fi.label; fSel.appendChild(op); });
+      fSel.value=c.field||'';
+      const oSel=document.createElement('select'); oSel.className='select';
+      const ftype=(fields.find(f=>f.id===fSel.value)?.type)||'text';
+      opsFor(ftype).forEach(o=>{ const op=document.createElement('option'); op.value=o; op.textContent=o; oSel.appendChild(op); });
+      oSel.value=c.op||'=';
+      
+// Build a value control appropriate for the selected field type
+function buildValueControl(){
+  const ref = fieldById(fSel.value);
+  const t = (ref?.ftype||'text').toLowerCase();
+  let el;
+  const setVal=(val)=>{ c.value=val; updateVisibility(); };
+  if(t==='dropdown' || t==='radio'){
+    el=document.createElement('select'); el.className='select';
+    (ref.options||[]).forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; el.appendChild(o); });
+    el.value = (c.value??'');
+    el.onchange=()=>{ if(demoMode){ return; } setVal(el.value); };
+  }else if(t==='multiselect' || t==='checkboxes'){
+    // single-select by default (to keep condition semantics consistent); can extend to multiple later
+    el=document.createElement('select'); el.className='select';
+    (ref.options||[]).forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; el.appendChild(o); });
+    el.value = (c.value??'');
+    el.onchange=()=>{ if(demoMode){ return; } setVal(el.value); };
+  }else if(t==='toggle'){
+    el=document.createElement('select'); el.className='select';
+    [['true','On'],['false','Off']].forEach(([val,lab])=>{ const o=document.createElement('option'); o.value=val; o.textContent=lab; el.appendChild(o); });
+    el.value = String(c.value??'false');
+    el.onchange=()=>{ if(demoMode){ return; } setVal(el.value); };
+  }else if(t==='number'){
+    el=document.createElement('input'); el.type='number'; el.className='input';
+    el.value = (c.value??'');
+    el.oninput=()=>{ if(demoMode){ return; } setVal(el.value); };
+  }else if(t==='date' || t==='time' || t==='datetime'){
+    el=document.createElement('input'); el.type=(t==='datetime')?'datetime-local':t; el.className='input';
+    el.value = (c.value??'');
+    el.oninput=()=>{ if(demoMode){ return; } setVal(el.value); };
+  }else{
+    el=document.createElement('input'); el.className='input'; el.placeholder='Value';
+    el.value = (c.value??'');
+    el.oninput=()=>{ if(demoMode){ return; } setVal(el.value); };
+  }
+  return el;
+}
+let vInp = buildValueControl();
+
+const del=document.createElement('button'); del.className='btn ghost'; del.textContent='Remove';
+del.onclick=()=>{ if(demoMode){ toast('Demo mode: editing disabled'); return; } node.logic.conditions.splice(idx,1); paintInspectorPane('visibility',node,hit); updateVisibility(); };
+fSel.onchange=()=>{ if(demoMode){ toast('Demo mode: editing disabled'); return; } c.field=fSel.value; /* rebuild operator list */ oSel.innerHTML=''; opsFor((fieldById(c.field)?.ftype||'text').toLowerCase()).forEach(o=>{ const op=document.createElement('option'); op.value=o; op.textContent=o; oSel.appendChild(op); }); c.op=oSel.options[0]?.value||'='; /* rebuild value control */ vInp.replaceWith(vInp=buildValueControl()); updateVisibility(); };
+oSel.onchange=()=>{ if(demoMode){ toast('Demo mode: editing disabled'); return; } c.op=oSel.value; /* could alter semantics */ updateVisibility(); };
+rowEl.append(fSel,oSel,vInp,del); list.appendChild(rowEl);
+ list.appendChild(rowEl);
+    });
+    inspBody.append(list);
+    const addBtn=document.createElement('button'); addBtn.className='btn primary'; addBtn.textContent='＋ Add condition';
+    addBtn.onclick=()=>{ if(demoMode){ toast('Demo mode: editing disabled'); return; } node.logic.conditions.push({field:fields[0]?.id||'', op:'=', value:''}); paintInspectorPane('visibility',node,hit); updateVisibility(); };
+    inspBody.append(addBtn);
+  }
+}
+
+/* Field listing for conditions */
+function allFieldsExcept(excludeId){
+  const item=getItem(); const out=[];
+  (function walk(n){ if(n.type==='field' && n.id!==excludeId) out.push(n); if(n.type==='section') n.children.forEach(walk); })(item.root);
+  return out;
+}
+
+/* Field helpers */
+function fieldById(id){
+  const it=getItem(); let hit=null;
+  (function walk(n){
+    if(hit) return;
+    if(n.type==='field' && n.id===id){ hit=n; return; }
+    if(n.type==='section') n.children.forEach(walk);
+  })(it.root);
+  return hit;
+}
+/* Section helpers */
+function sectionById(id){ const it=getItem(); let hit=null; (function walk(n){ if(n.id===id){ hit=n; return; } if(n.type==='section') n.children.forEach(walk); })(it.root); return hit; }
+function setTarget(id){ if(demoMode){ toast('Demo mode: editing disabled'); return; } const sec=sectionById(id); if(sec){ targetSectionId=id; render(); openInspector(id); } }
+function deleteNode(id){
+  if(demoMode){ toast('Demo mode: editing disabled'); return; }
+  const it=getItem(); if(!it) return;
+  function find(root,id,p=null){ if(root.id===id) return {node:root,parent:p}; if(root.type==='section'){ for(const c of root.children){ const r=find(c,id,root); if(r) return r; } } return null; }
+  const hit=find(it.root,id); if(!hit||!hit.parent) return; const hitName = (hit && hit.node && hit.node.name) ? hit.node.name : '';
+  return confirmDialog({title:'Delete item?', name:hitName, showName:true, body:'This action cannot be undone.', confirmText:'Delete', cancelText:'Cancel', tone:'danger', icon:'🗑️'}).then(ok=>{ if(!ok) return;
+  hit.parent.children = hit.parent.children.filter(c=>c.id!==id); render(); closeInspector(); });
+}
+function closeInspector(){ insp.classList.remove('open'); }
+
+/* ================= Visibility engine ================= */
+function getFieldValueById(fid){
+  const el=document.getElementById('f_'+fid);
+  const item=getItem(); let node=null; (function find(n){ if(n.id===fid){ node=n; return; } if(n.type==='section') n.children.forEach(find); })(item.root);
+  if(!node) return '';
+  const t=node.ftype;
+  if(!el){
+    if(t==='radio'){ const nodes=$$('input[name="f_'+fid+'"]'); const y=nodes.find(n=>n.checked); return y?y.value:''; }
+    if(t==='checkboxes'){ const nodes=$$('input[name="f_'+fid+'"]'); return nodes.filter(n=>n.checked).map(n=>n.value); }
+    if(t==='toggle'){ return String(node.default)==='true'; }
+    return node.default||'';
+  }
+  if(t==='paragraph'){ return el.innerHTML; }
+  if(t==='multiselect'){ return Array.from(el.selectedOptions).map(o=>o.value); }
+  if(t==='file'){ return el.files?.length? el.files[0].name : ''; }
+  return el.value??'';
+}
+function testCondition(c){
+  function _normDT(s){ return (typeof s==='string') ? s.replace(' ', 'T') : s; }
+
+  if(!c||!c.field) return true;
+  const cur=getFieldValueById(c.field), v=c.value??'', op=c.op||'=';
+  if(op==='=') return Array.isArray(cur)? cur.includes(v): String(cur)===String(v);
+  if(op==='!=') return Array.isArray(cur)? !cur.includes(v): String(cur)!==String(v);
+  if(op==='contains') return Array.isArray(cur)? cur.includes(v): String(cur).toLowerCase().includes(String(v).toLowerCase());
+  if(op==='notcontains') return Array.isArray(cur)? !cur.includes(v): !String(cur).toLowerCase().includes(String(v).toLowerCase());
+  // typed comparisons for number/date/time/datetime
+  if(op==='>'||op==='<'||op==='>='||op==='<='){
+    const meta = (typeof fieldById==='function') ? fieldById(c.field) : null;
+    const t = (meta && meta.ftype ? String(meta.ftype).toLowerCase() : '');
+    function toTimeMinutes(x){
+      if(x==null) return NaN;
+      const s=String(x).trim();
+      if(!s) return NaN;
+      const parts=s.split(':').map(n=>parseInt(n,10));
+      if(parts.some(n=>Number.isNaN(n))) return NaN;
+      const [h=0,m=0,sec=0]=parts;
+      return h*60 + m + (sec>0? sec/60 : 0);
+    }
+    function cmp(a,b){
+      if(op==='>') return a>b;
+      if(op==='<') return a<b;
+      if(op==='>=') return a>=b;
+      if(op==='<=') return a<=b;
+      return false;
+    }
+    if(t==='number'){
+      const na=parseFloat(cur), nb=parseFloat(v);
+      if(!Number.isNaN(na)&&!Number.isNaN(nb)) return cmp(na,nb);
+    }else if(t==='date' || t==='datetime'){
+      const da=Date.parse(cur), db=Date.parse(v);
+      if(!Number.isNaN(da)&&!Number.isNaN(db)) return cmp(da,db);
+    }else if(t==='time'){
+      const ta=toTimeMinutes(cur), tb=toTimeMinutes(v);
+      if(!Number.isNaN(ta)&&!Number.isNaN(tb)) return cmp(ta,tb);
+    }else{
+      // Fallback string compare when type unknown
+      return cmp(String(cur), String(v));
+    }
+    // If parsing failed, be conservative (no match)
+    return false;
+  }
+  return true;
+}
+function passesLogic(n){
+  const lg=n.logic||{mode:'all',conditions:[]};
+  if(!lg.conditions||lg.conditions.length===0) return true;
+  const res=lg.conditions.map(testCondition);
+  return (lg.mode==='any')? res.some(Boolean): res.every(Boolean);
+}
+
+function updateVisibility(){
+  const item=getItem(); if(!item) return;
+  (function walk(n){
+    if(n.type==='field'){
+      const card=document.querySelector(`.fcard[data-nid="${n.id}"]`);
+      if(card){
+        const ok = passesLogic(n);
+        const hasConds = (n.logic && Array.isArray(n.logic.conditions) && n.logic.conditions.length>0);
+        if(demoMode){
+          card.style.display = ok? '' : 'none';
+          const b = card.querySelector('.cond-badge'); if(b) b.remove();
+          card.classList.remove('dimmed');
+        }else{
+          card.style.display = '';
+          let badge = card.querySelector('.cond-badge');
+          if(hasConds){
+            if(!badge){
+              badge = document.createElement('span');
+              badge.className = 'cond-badge chip';
+              const bar = card.querySelector('.icons');
+              (bar || card).appendChild(badge);
+            }
+            badge.textContent = ok? 'Shown (conditions met)' : 'Hidden in demo';
+            card.classList.toggle('dimmed', !ok);
+          }else{
+            if(badge) badge.remove();
+            card.classList.remove('dimmed');
+          }
+        }
+      }
+    }
+    if(n.type==='section') n.children.forEach(walk);
+  })(item.root);
+}
+
+/* Submit & Reset */
+function doSubmit(){
+  const item=getItem(); if(!item) return true; let ok=true;
+  (function walk(n){
+    if(n.type==='field'){
+      const card=document.querySelector(`.fcard[data-nid="${n.id}"]`);
+      if(card && card.style.display==='none') return;
+      const old=card?.querySelector('.error'); if(old) old.remove();
+      const val=getFieldValueById(n.id); let msg='';
+      if(n.required){ if((Array.isArray(val)&&!val.length)||(!Array.isArray(val)&&String(val).trim()==='')) msg='This field is required.'; }
+      if(!msg && n.pattern){ try{const re=new RegExp(n.pattern); if(!re.test(String(val))) msg='Does not match required format.';}catch{} }
+      if(!msg && n.min && n.ftype==='number'){ if(Number(val)<Number(n.min)) msg=`Must be ≥ ${n.min}.`; }
+      if(!msg && n.max && n.ftype==='number'){ if(Number(val)>Number(n.max)) msg=`Must be ≤ ${n.max}.`; }
+      if(msg && card){ const d=document.createElement('div'); d.className='error'; d.style.color='#b91c1c'; d.style.fontSize='12px'; d.textContent=msg; card.appendChild(d); ok=false; }
+    }
+    if(n.type==='section') n.children.forEach(walk);
+  })(item.root);
+  formNote.textContent = ok? '✅ Submitted (demo).' : '⚠️ Please fix the highlighted issues.';
+  return ok;
+}
+function doReset(){
+  $('#designerCard').querySelectorAll('input,textarea,select').forEach(el=>{
+    if(el.type==='checkbox'||el.type==='radio'){ el.checked=false; }
+    else if(el.tagName==='SELECT' && el.multiple){ Array.from(el.options).forEach(o=>o.selected=false); }
+    else { el.value=''; }
+  });
+  $$('.error').forEach(e=>e.remove());
+  formNote.textContent='↺ Cleared.';
+  updateVisibility();
+}
+
+// Live re-evaluation: update field visibility whenever user changes any input
+(function(){
+  const host=document.getElementById('designerCard');
+  if(!host) return;
+  function onEvt(e){
+    const t=e.target;
+    if(!t) return;
+    if(t.matches('input,select,textarea,div[contenteditable="true"]')){
+      try{ updateVisibility(); }catch{}
+    }
+  }
+  host.addEventListener('input', onEvt, true);
+  host.addEventListener('change', onEvt, true);
+})();
+$('#formSubmit').onclick=()=>doSubmit(); $('#formReset').onclick=()=>doReset();
+
+/* ================== DateTime Picker ================== */
+const dtpRoot = $('#dtpRoot');
+function openDTP(targetInput){
+  const start = targetInput.value ? new Date(targetInput.value.replace(' ', 'T')) : new Date();
+  const state = { d:new Date(start), phase:'hour', ampm: start.getHours()<12?'am':'pm' };
+
+  dtpRoot.innerHTML = '';
+  const cont=document.createElement('div'); cont.className='dtp'; dtpRoot.appendChild(cont);
+  const head=document.createElement('div'); head.className='dtp-head';
+  const prev=document.createElement('button'); prev.className='navbtn'; prev.textContent='‹';
+  const next=document.createElement('button'); next.className='navbtn'; next.textContent='›';
+  const title=document.createElement('div'); title.style.fontWeight='800';
+  const timeLive=document.createElement('div'); timeLive.style.fontWeight='800';
+  head.append(prev,title,next,timeLive); cont.appendChild(head);
+
+  const body=document.createElement('div'); body.className='dtp-body'; cont.appendChild(body);
+  const calWrap=document.createElement('div'); calWrap.className='dtp-cal'; body.appendChild(calWrap);
+  const clockWrap=document.createElement('div'); clockWrap.className='dtp-clock'; body.appendChild(clockWrap);
+
+  const foot=document.createElement('div'); foot.className='dtp-foot'; const ok=document.createElement('button'); ok.className='btn primary'; ok.textContent='Confirm'; foot.appendChild(ok); cont.appendChild(foot);
+
+  function fmt2(n){ return String(n).padStart(2,'0'); }
+  function renderHead(){
+    const m=state.d.toLocaleString(undefined,{month:'long',year:'numeric'});
+    title.textContent=m;
+    timeLive.textContent=`${fmt2(state.d.getHours())}:${fmt2(state.d.getMinutes())}:${fmt2(state.d.getSeconds())}`;
+  }
+
+  function renderCal(){
+    calWrap.innerHTML='';
+    const names=['S','M','T','W','T','F','S'];
+    const headRow=document.createElement('div'); headRow.className='dtp-grid';
+    names.forEach(n=>{ const s=document.createElement('div'); s.className='dtp-dayhead'; s.textContent=n; headRow.appendChild(s); });
+    calWrap.appendChild(headRow);
+
+    const grid=document.createElement('div'); grid.className='dtp-grid'; calWrap.appendChild(grid);
+
+    const cur = new Date(state.d); cur.setDate(1);
+    const firstDay = cur.getDay();
+    const month = cur.getMonth();
+    const prevM = new Date(cur); prevM.setMonth(month-1); const prevDays = new Date(prevM.getFullYear(), prevM.getMonth()+1, 0).getDate();
+    const days = new Date(cur.getFullYear(), month+1, 0).getDate();
+
+    for(let i=firstDay-1;i>=0;i--){
+      const v=prevDays-i; const c=document.createElement('div'); c.className='dtp-cell dis'; c.textContent=v; grid.appendChild(c);
+    }
+    const today=new Date();
+    for(let d=1; d<=days; d++){
+      const c=document.createElement('div'); c.className='dtp-cell'; c.textContent=d;
+      const isToday = today.getFullYear()===state.d.getFullYear() && today.getMonth()===state.d.getMonth() && today.getDate()===d;
+      if(isToday) c.classList.add('cur');
+      if(state.d.getDate()===d) c.classList.add('sel');
+      c.onclick=()=>{ state.d.setDate(d); renderHead(); renderCal(); };
+      grid.appendChild(c);
+    }
+    const total = firstDay + days;
+    for(let i=1;i<= (7 - (total % 7 || 7)); i++){
+      const c=document.createElement('div'); c.className='dtp-cell dis'; c.textContent=i; grid.appendChild(c);
+    }
+  }
+
+  function polarToXY(r,deg,cx,cy){
+    const rad=(deg-90)*Math.PI/180;
+    return {x: cx + r*Math.cos(rad), y: cy + r*Math.sin(rad)};
+  }
+  function renderClock(){
+    clockWrap.innerHTML='';
+    const time=document.createElement('div'); time.className='dtp-time'; time.textContent='';
+    const face=document.createElement('div'); face.className='clock-face';
+    const hand=document.createElement('div'); hand.className='clock-hand'; face.appendChild(hand);
+    clockWrap.append(time,face);
+
+    const radius=110, cx=120, cy=120;
+    const nums = state.phase==='hour' ? Array.from({length:12},(_,i)=> (i+1)) : Array.from({length:12},(_,i)=> i*5);
+    nums.forEach(n=>{
+      const deg=(n/12)*360;
+      const p=polarToXY(radius,deg,cx,cy);
+      const el=document.createElement('div'); el.className='clock-num'; el.style.left=p.x+'px'; el.style.top=p.y+'px'; el.textContent=n===0?'00':n;
+      face.appendChild(el);
+    });
+
+    function setHandByTime(){
+      let deg;
+      if(state.phase==='hour'){
+        const h=state.d.getHours()%12 || 12;
+        deg = (h/12)*360;
+      }else{
+        const m=state.d.getMinutes();
+        deg = (m/60)*360;
+      }
+      hand.style.transform=`translate(-50%,-100%) rotate(${deg}deg)`;
+      time.textContent = `${String(state.phase).toUpperCase()}: ` + (state.phase==='hour' ? (state.d.getHours()%12||12) : ('00'+state.d.getMinutes()).slice(-2));
+    }
+    setHandByTime();
+
+    face.onclick=(e)=>{
+      const rect=face.getBoundingClientRect();
+      const x=e.clientX-rect.left - rect.width/2;
+      const y=e.clientY-rect.top - rect.height/2;
+      let deg=Math.atan2(y,x)*180/Math.PI + 90; if(deg<0) deg+=360;
+      if(state.phase==='hour'){
+        let h=Math.round(deg/30); if(h===0) h=12;
+        const wasPM=state.d.getHours()>=12;
+        state.d.setHours((wasPM? (h%12)+12 : (h%12))%24);
+        state.phase='minute';
+      }else{
+        const m=Math.round(deg/6)%60;
+        state.d.setMinutes(m); state.phase='hour';
+      }
+      renderHead(); renderClock();
+    };
+
+    const ampm=document.createElement('div'); ampm.className='ampm';
+    const am=document.createElement('button'); am.textContent='AM';
+    const pm=document.createElement('button'); pm.textContent='PM';
+    function syncAP(){ am.classList.toggle('active', state.d.getHours()<12); pm.classList.toggle('active', state.d.getHours()>=12); }
+    am.onclick=()=>{ const h=state.d.getHours(); if(h>=12) state.d.setHours(h-12); syncAP(); renderHead(); };
+    pm.onclick=()=>{ const h=state.d.getHours(); if(h<12) state.d.setHours(h+12); syncAP(); renderHead(); };
+    syncAP(); clockWrap.appendChild(ampm); ampm.append(am,pm);
+  }
+
+  prev.onclick=()=>{ state.d.setMonth(state.d.getMonth()-1); renderHead(); renderCal(); };
+  next.onclick=()=>{ state.d.setMonth(state.d.getMonth()+1); renderHead(); renderCal(); };
+  ok.onclick=()=>{ const z=(n)=>String(n).padStart(2,'0'); targetInput.value = state.d.getFullYear()+'-'+z(state.d.getMonth()+1)+'-'+z(state.d.getDate())+' T'+z(state.d.getHours())+':'+z(state.d.getMinutes())+':'+z(state.d.getSeconds()); closeDTP(); };
+
+  function closeDTP(){ dtpRoot.classList.remove('open'); dtpRoot.innerHTML=''; document.removeEventListener('keydown',onEsc); }
+  function onEsc(e){ if(e.key==='Escape') closeDTP(); }
+  dtpRoot.onclick=(e)=>{ if(e.target===dtpRoot) closeDTP(); };
+  document.addEventListener('keydown', onEsc);
+
+  renderHead(); renderCal(); renderClock();
+  dtpRoot.classList.add('open');
+}
+
+/* ================= INIT ================= */
+(function init(){
+  const f1={id:uid(),name:'Feature One',place:'h',icon:'➕',children:[],root:defaultRootSection('Feature One')};
+  const f2={id:uid(),name:'Feature Two',place:'v',icon:'📁',children:[],root:defaultRootSection('Feature Two')};
+  const sub={id:uid(),name:'Upload',place:'h',icon:'▶️',children:[],root:defaultRootSection('Upload')};
+  const sub2={id:uid(),name:'Go Live',place:'h',icon:'📡',children:[],root:defaultRootSection('Go Live')};
+  const sub3={id:uid(),name:'Create Post',place:'h',icon:'✏️',children:[],root:defaultRootSection('Create Post')};
+  f1.children.push(sub,sub2,sub3);
+
+  Model.items.push(f1,f2);
+  renderMenus(); openDesigner(f1);
+})();
+
+/* ================= RENDER MENUS ================= */
+function renderMenus(){
+  hRibbon.innerHTML='';
+  roots('h').forEach(n=> hRibbon.appendChild(buildHItem(n)));
+  checkRibbonOverflow();
+  const vNav=$('#vNav'); vNav.innerHTML='';
+  roots('v').forEach(n=> vNav.appendChild(buildVItem(n)));
+  setActive();
+}
+
+/* ================= SIDE TOGGLE + RESIZE ================= */
+$('#toggleSideBtn').onclick=()=> document.body.classList.toggle('side-open');
+let __r; window.addEventListener('resize',()=>{ clearTimeout(__r); __r=setTimeout(()=>{ render(); },120); });
+
+/* ===== Modal Viewer (enhanced) ===== */
+let viewerLastUrl=null; let viewerLastIsBlob=false;
+function openViewer(url, kind, name){
+  // Hide (do not close) any open upload dialogs; restore them on close
+  try{
+    window.__viewerHiddenEls = [];
+    ['uploadRoot','mgrRoot'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el && (el.classList.contains('open') || getComputedStyle(el).display!=='none')){
+        window.__viewerHiddenEls.push(el);
+        el.dataset._wasOpen='1';
+        el.style.visibility='hidden';
+      }
+    });
+  }catch{}
+  // Ensure uploader/file manager modals don't sit above the viewer
+  try{
+    const up=document.getElementById('uploadRoot'); if(up){ up.classList.remove('open'); up.innerHTML=''; }
+    const mgr=document.getElementById('mgrRoot'); if(mgr){ mgr.classList.remove('open'); }
+  }catch{}
+  const root=document.getElementById('viewerRoot'); if(!root) return;
+  root.innerHTML='';
+  const box=document.createElement('div'); box.className='viewer'; root.appendChild(box);
+
+  // Header
+  const head=document.createElement('div'); head.className='viewer-header';
+  const title=document.createElement('div'); title.className='viewer-title';
+  title.textContent = name || (kind==='pdf' ? 'PDF preview' : 'Image preview');
+  const actions=document.createElement('div'); actions.className='viewer-actions';
+  const openNew=document.createElement('a'); openNew.className='btn'; openNew.textContent='Open in new tab'; openNew.href=url; openNew.target='_blank';
+  const closeBtn=document.createElement('button'); closeBtn.className='close-x'; closeBtn.setAttribute('aria-label','Close'); closeBtn.textContent='✕';
+  closeBtn.onclick=()=>closeViewer();
+  actions.append(openNew, closeBtn);
+  head.append(title, actions); box.appendChild(head);
+
+  // Body & Stage
+  const body=document.createElement('div'); body.className='viewer-body';
+  const stage=document.createElement('div'); stage.className='viewer-stage';
+  let media; let scale=1; let rotation=0;
+  if(kind==='pdf'){ media=document.createElement('iframe'); media.src=url; media.allow='fullscreen'; }
+  else if(kind==='html'){ media=document.createElement('iframe'); media.src=url; media.sandbox=''; }
+  else { media=new Image(); media.src=url; }
+  stage.appendChild(media);
+  body.appendChild(stage); box.appendChild(body);
+
+  // Toolbar
+  const tb=document.createElement('div'); tb.className='viewer-toolbar';
+  function mk(txt, title, fn){ const b=document.createElement('button'); b.className='toolbar-btn'; b.textContent=txt; b.title=title; b.onclick=fn; return b; }
+  const fitBtn=mk('Fit','Fit to window',()=>{ scale=1; rotation=rotation%360; apply(); });
+  const zoomIn=mk('+','Zoom in (Ctrl +)',()=>{ scale=Math.min(5, scale+0.15); apply(); });
+  const zoomOut=mk('−','Zoom out (Ctrl -)',()=>{ scale=Math.max(0.2, scale-0.15); apply(); });
+  const rotateBtn=mk('⟲','Rotate 90°',()=>{ rotation=(rotation+90)%360; apply(); });
+  tb.append(zoomOut, zoomIn, fitBtn, rotateBtn);
+  body.appendChild(tb);
+
+  function apply(){
+    if(kind==='pdf'){ media.style.transform = 'scale('+scale+') rotate('+rotation+'deg)'; }
+    else { media.style.transform = 'scale('+scale+') rotate('+rotation+'deg)'; }
+  }
+
+  // Simple drag-to-pan when zoomed
+  let dragging=false, sx=0, sy=0, ox=0, oy=0;
+  stage.addEventListener('mousedown', (e)=>{ if(scale<=1) return; dragging=true; sx=e.clientX; sy=e.clientY; stage.style.cursor='grabbing'; });
+  window.addEventListener('mousemove', (e)=>{ if(!dragging) return; const dx=e.clientX-sx, dy=e.clientY-sy; stage.scrollLeft = ox - dx; stage.scrollTop = oy - dy; });
+  window.addEventListener('mouseup', ()=>{ dragging=false; ox=stage.scrollLeft; oy=stage.scrollTop; stage.style.cursor='default'; });
+  stage.addEventListener('wheel', (e)=>{ if(e.ctrlKey){ e.preventDefault(); (e.deltaY>0?zoomOut:zoomIn)(); } }, {passive:false});
+
+  viewerLastUrl=url; viewerLastIsBlob = typeof url==='string' && url.startsWith('blob:');
+  root.classList.add('open');
+  function onEsc(e){ if(e.key==='Escape') closeViewer(); if((e.ctrlKey||e.metaKey)&&e.key==='+') zoomIn(); if((e.ctrlKey||e.metaKey)&&e.key==='-') zoomOut(); if(e.key==='0'&&(e.ctrlKey||e.metaKey)) {e.preventDefault(); fitBtn.click();} if(e.key.toLowerCase()==='r'){ rotateBtn.click(); } }
+  root.addEventListener('click', (e)=>{ if(e.target===root) closeViewer(); });
+  document.addEventListener('keydown', onEsc, {once:false});
+}
+function closeViewer(){
+  // Restore any dialogs hidden by viewer
+  try{
+    (window.__viewerHiddenEls||[]).forEach(el=>{ el.style.visibility=''; /* keep 'open' state */ delete el.dataset._wasOpen; });
+    window.__viewerHiddenEls = [];
+  }catch{} const root=document.getElementById('viewerRoot'); if(!root) return; root.classList.remove('open'); root.innerHTML=''; try{ if(viewerLastIsBlob && viewerLastUrl){ URL.revokeObjectURL(viewerLastUrl); window.__blobURLs && window.__blobURLs.delete && window.__blobURLs.delete(viewerLastUrl); } }catch{} viewerLastUrl=null; viewerLastIsBlob=false; }
+
+// === Fullscreen toggle: delegated, cross-browser, and label-synced ===
+(function(){
+  function isFS(){ return document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement; }
+  function reqFS(el){ return (el.requestFullscreen||el.webkitRequestFullscreen||el.msRequestFullscreen).call(el); }
+  function exitFS(){ return (document.exitFullscreen||document.webkitExitFullscreen||document.msExitFullscreen).call(document); }
+  function syncBtn(){
+    const btn=document.getElementById('fullscreenBtn'); if(!btn) return;
+    btn.textContent = isFS() ? 'Exit Full Screen' : '⛶ Full Screen';
+    btn.setAttribute('aria-pressed', isFS() ? 'true':'false');
+  }
+  // Click handler (delegated in case button is moved in DOM)
+  document.addEventListener('click', (e)=>{
+    const btn = e.target.closest && e.target.closest('#fullscreenBtn');
+    if(!btn) return;
+    e.preventDefault();
+    try{
+      if(!isFS()) reqFS(document.documentElement);
+      else exitFS();
+    }catch(e){/* ignore */}
+  }, true);
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', (e)=>{
+    if(e.key==='F11'){ e.preventDefault(); try{ if(!isFS()) reqFS(document.documentElement); else exitFS(); }catch{} }
+    if(e.key==='Escape'){ setTimeout(syncBtn,0); }
+  });
+
+  ['fullscreenchange','webkitfullscreenchange','msfullscreenchange'].forEach(ev=>document.addEventListener(ev, syncBtn));
+  // Try to place the button inline with mode controls if present
+  (function place(){
+    const fs=document.getElementById('fullscreenBtn'); if(!fs) return;
+    const demo=document.getElementById('modeDemoBtn');
+    const edit=document.getElementById('modeEditBtn');
+    const host=(demo&&demo.parentElement)||(edit&&edit.parentElement);
+    if(host && !host.contains(fs)){ host.appendChild(fs); fs.classList.add('inline'); }
+  })();
+  // Initial sync
+  setTimeout(syncBtn, 0);
+})();
+
+// === Prevent any inline editing while in Demo mode ===
+(function(){
+  function disableInlineEditing(){
+    // Remove contenteditable and editing state everywhere
+    document.querySelectorAll('[contenteditable="true"], [data-editing="1"]').forEach(el=>{
+      el.setAttribute('contenteditable','false');
+      el.removeAttribute('data-editing');
+    });
+    // If something is currently focused and editable, blur it
+    if(document.activeElement && (document.activeElement.getAttribute('contenteditable')==='true' || document.activeElement.dataset.editing==='1')){
+      try{ document.activeElement.blur(); }catch{}
+    }
+  }
+  // Harden all clicks: if in demo mode, block starting inline edits
+  document.addEventListener('click', (e)=>{
+    if(typeof demoMode!=='undefined' && demoMode===true){
+      const target = e.target;
+      // If the user clicks on any element that normally triggers inline edit, stop it
+      if(target.closest && (target.closest('#pageName') || target.closest('.section-name') || target.closest('.label-editable') || target.closest('#vNav .name') || target.closest('#hRibbon .name'))){
+        e.stopPropagation();
+        e.preventDefault();
+        disableInlineEditing();
+      }
+    }
+  }, true);
+
+  // Hook into mode toggling to enforce read-only in demo
+  const _applyMode = window.applyMode;
+  if(_applyMode){
+    window.applyMode = function(){
+      _applyMode.apply(this, arguments);
+      if(typeof demoMode!=='undefined' && demoMode===true){
+        disableInlineEditing();
+      }
+    };
+  } else {
+    // Fallback: run once at startup if already in demo
+    if(typeof demoMode!=='undefined' && demoMode===true){
+      disableInlineEditing();
+    }
+  }
+})();
+
+// === Demo-mode hardening: block dblclick + focus, sanitize after render ===
+(function(){
+  function isDemo(){ return (typeof demoMode!=='undefined' && demoMode===true) || document.body.classList.contains('demo-mode'); }
+  function isEditableTarget(t){
+    return t && t.closest && (
+      t.closest('#pageName') ||
+      t.closest('.section-name') ||
+      t.closest('.label-editable') ||
+      t.closest('#vNav .name') ||
+      t.closest('#hRibbon .name')
+    );
+  }
+  function sanitize(){
+    document.querySelectorAll('[contenteditable="true"], [data-editing="1"], .section-name[contenteditable], .label-editable[contenteditable]').forEach(el=>{
+      el.setAttribute('contenteditable','false');
+      el.removeAttribute('data-editing');
+    });
+    if(document.activeElement && isEditableTarget(document.activeElement)){
+      try{ document.activeElement.blur(); }catch{}
+    }
+  }
+  // Block dblclick as well
+  document.addEventListener('dblclick', (e)=>{
+    if(!isDemo()) return;
+    if(isEditableTarget(e.target)){ e.stopPropagation(); e.preventDefault(); sanitize(); }
+  }, true);
+  // Block focus entry
+  document.addEventListener('focusin', (e)=>{
+    if(!isDemo()) return;
+    if(isEditableTarget(e.target)){ e.stopPropagation(); e.preventDefault(); sanitize(); }
+  }, true);
+  // Also guard keydown typing
+  document.addEventListener('keydown', (e)=>{
+    if(!isDemo()) return;
+    if(isEditableTarget(e.target)){ e.stopPropagation(); e.preventDefault(); sanitize(); }
+  }, true);
+
+  // Sanitize after every render (in case contenteditable is re-applied)
+  const _render = window.render;
+  if(_render){
+    window.render = function(){ _render.apply(this, arguments); if(isDemo()) sanitize(); };
+  }
+  // On init and when switching modes
+  sanitize();
+})();
+
+// Remove leftover nav tip if injected dynamically
+(function(){
+  const sel = Array.from(document.querySelectorAll('.nav-tip, .tip, .tip-nav'));
+  sel.forEach(el=>{
+    if(/Items with children are containers/i.test(el.textContent||'')) el.remove();
+  });
+})();
+
+// === Modal Dropzone Uploader ===
+(function(){
+  window.openUploader = function(accept, onFiles){
+    let root = document.getElementById('uploadRoot');
+    if(!root){
+      root = document.createElement('div'); root.id='uploadRoot'; root.className='upload-root';
+      document.body.appendChild(root);
+    }
+    root.innerHTML = '';
+    const box = document.createElement('div'); box.className='upload'; root.appendChild(box);
+
+    const head = document.createElement('div'); head.className='upload-header';
+    const title = document.createElement('div'); title.className='upload-title'; title.textContent='Upload files';
+    const cx = document.createElement('button'); cx.className='close-x'; cx.textContent='✕'; cx.onclick=()=>close();
+    head.append(title, cx); box.appendChild(head);
+
+    const body = document.createElement('div'); body.className='upload-body';
+    const drop = document.createElement('div'); drop.className='upload-drop';
+    drop.innerHTML = '<div style="font-weight:600">Drag & drop files here</div><div>or</div>';
+    const actions = document.createElement('div'); actions.className='upload-actions';
+    const browse = document.createElement('button'); browse.className='btn'; browse.type='button'; browse.textContent='Browse files';
+    const cancel = document.createElement('button'); cancel.className='btn ghost'; cancel.type='button'; cancel.textContent='Cancel';
+    actions.append(browse, cancel);
+    body.append(drop, actions); box.appendChild(body);
+
+    const input = document.createElement('input'); input.type='file'; input.multiple=true; if(accept) input.accept=accept; input.style.display='none';
+    box.appendChild(input);
+
+    function finish(list){
+      try{ onFiles && onFiles(list); }finally{ close(); }
+    }
+    function close(){ root.classList.remove('open'); root.innerHTML=''; window.__confirmOpen=false; }
+    function onDrop(e){
+      e.preventDefault(); drop.classList.remove('over');
+      const files = e.dataTransfer && e.dataTransfer.files;
+      if(files && files.length) finish(files);
+    }
+    function onDragOver(e){ e.preventDefault(); drop.classList.add('over'); }
+    function onDragLeave(){ drop.classList.remove('over'); }
+
+    drop.addEventListener('dragover', onDragOver);
+    drop.addEventListener('dragleave', onDragLeave);
+    drop.addEventListener('drop', onDrop);
+    browse.onclick = ()=> input.click();
+    cancel.onclick = ()=> close();
+    input.onchange = ()=>{ if(input.files && input.files.length) finish(input.files); };
+
+    root.classList.add('open');
+    root.addEventListener('click', (e)=>{ if(e.target===root) close(); });
+    document.addEventListener('keydown', function esc(e){ if(e.key==='Escape'){ close(); document.removeEventListener('keydown', esc); } });
+  };
+})();
+
+// === Modal File Manager (grid-only previews inside dialog) ===
+(function(){
+  window.openFileManager = function(cfgOrAccept, filesArr, onUpdate){
+    
+    const cfg = (typeof cfgOrAccept==='object' && cfgOrAccept) ? cfgOrAccept : {accept: cfgOrAccept, maxSizeMB: 20, maxFiles: 0, multiple: true, htmlSandbox: true};
+    const accept = cfg.accept || '';
+    const maxSizeMB = (typeof cfg.maxSizeMB==='number' && cfg.maxSizeMB>0) ? cfg.maxSizeMB : 20;
+    const maxFiles = (typeof cfg.maxFiles==='number' && cfg.maxFiles>=0) ? cfg.maxFiles : 0;
+    const multiple = !!cfg.multiple;
+    const htmlSandbox = cfg.htmlSandbox!==false;
+    
+    let root = document.getElementById('mgrRoot');
+    if(!root){
+      root = document.createElement('div'); root.id='mgrRoot'; root.className='mgr-root';
+      document.body.appendChild(root);
+    }
+    root.innerHTML = '';
+    const box = document.createElement('div'); box.className='mgr'; root.appendChild(box);
+
+    const head = document.createElement('div'); head.className='mgr-header';
+    const title = document.createElement('div'); title.className='mgr-title'; title.textContent='Manage files';
+    const cx = document.createElement('button'); cx.className='close-x'; cx.textContent='✕'; cx.onclick=()=>close();
+    head.append(title, cx); box.appendChild(head);
+
+    const drop = document.createElement('div'); drop.className='mgr-drop';
+    drop.innerHTML = '<div style="font-weight:600">Drag & drop files here</div><div>or</div>';
+    const actions = document.createElement('div'); actions.className='upload-actions';
+    const browse = document.createElement('button'); browse.className='btn'; browse.type='button'; browse.textContent='Browse files';
+    actions.append(browse);
+    const hint=document.createElement('div'); hint.style.marginTop='8px'; hint.style.fontSize='12px'; hint.style.color='#64748b'; hint.textContent='Allowed: '+(accept||'images,pdf,html')+' • Max size: '+maxSizeMB+' MB'+(maxFiles?(' • Up to '+maxFiles+' files'):'');
+    const dropWrap = document.createElement('div'); dropWrap.append(drop, actions, hint);
+    box.appendChild(dropWrap);
+
+    const body = document.createElement('div'); body.className='mgr-body';
+    const grid = document.createElement('div'); grid.className='mgr-grid';
+    body.appendChild(grid); box.appendChild(body);
+
+    const footer = document.createElement('div'); footer.className='mgr-footer';
+    const done = document.createElement('button'); done.className='btn'; done.textContent='Done'; done.onclick=()=>close();
+    footer.append(done); box.appendChild(footer);
+
+    const input = document.createElement('input'); input.type='file'; input.multiple=true; if(accept) input.accept=accept; input.style.display='none';
+    box.appendChild(input);
+
+    
+    function parseAccept(str){
+      if(!str) return [];
+      return str.split(',').map(s=>s.trim()).filter(Boolean);
+    }
+    const acceptList = parseAccept(accept);
+    function isAllowedType(file){
+      if(!acceptList.length) return /^(image\/.*|application\/pdf|text\/html)$/i.test(file.type) || /\.html?$/i.test(file.name||'');
+      const name=(file.name||'').toLowerCase();
+      const mime=(file.type||'').toLowerCase();
+      return acceptList.some(rule=>{
+        rule=rule.toLowerCase();
+        if(rule.endsWith('/*')){ const p=rule.replace('/*','/'); return mime.startsWith(p); }
+        if(rule.startsWith('.')){ return name.endsWith(rule); }
+        return mime===rule;
+      });
+    }
+    
+    function bytes(n){ if(n<1024) return n+' B'; if(n<1024*1024) return (n/1024).toFixed(1)+' KB'; return (n/1024/1024).toFixed(1)+' MB'; }
+    function pushErr(m){ toast ? toast(m) : console.warn(m); }
+    function addFile(f){
+      const MAX = maxSizeMB*1024*1024;
+      if(!isAllowedType(f)){ pushErr('Unsupported type: '+(f.name||'')); return; }
+      if(f.size>MAX){ pushErr((f.name||'file')+' too large ('+bytes(f.size)+', max '+maxSizeMB+' MB)'); return; }
+      if(maxFiles && filesArr.length>=maxFiles){ pushErr('Maximum '+maxFiles+' files allowed. Remove one to add another.'); return; }
+      const url = URL.createObjectURL(f);
+      const kind = f.type.startsWith('image/') ? 'image' : (f.type==='application/pdf' ? 'pdf' : 'html');
+      filesArr.push({file:f, url, kind, name:f.name});
+    }
+    function handleFiles(list){ const arr=Array.from(list||[]);
+      if(!multiple){
+        // replace policy: keep only last file
+        // revoke existing blobs
+        filesArr.splice(0, filesArr.length).forEach(g=>{ try{ if(g && g.url && g.url.startsWith('blob:')) URL.revokeObjectURL(g.url); }catch{} });
+      }
+      arr.forEach(addFile);
+      render(); onUpdate && onUpdate(filesArr); }
+
+    function render(){
+      grid.innerHTML='';
+      filesArr.forEach((obj, idx)=>{
+        const card=document.createElement('div'); card.className='mgr-card';
+        if(obj.kind==='image'){
+          const img=new Image(); img.src=obj.url; img.className='mgr-thumb'; card.appendChild(img);
+        }else if(obj.kind==='pdf'){
+          const iframe=document.createElement('iframe'); iframe.src=obj.url; iframe.className='mgr-thumb is-pdf'; card.appendChild(iframe);
+        }else{
+          const iframe=document.createElement('iframe'); iframe.src=obj.url; iframe.className='mgr-thumb'; if(htmlSandbox) iframe.sandbox=''; card.appendChild(iframe);
+        }
+        const nm=document.createElement('div'); nm.className='mgr-name'; nm.title=obj.name; nm.textContent=obj.name; card.appendChild(nm);
+        const meta=document.createElement('div'); meta.className='mgr-meta'; meta.textContent = (typeof obj.size==='number') ? bytes(obj.size) : (obj.file && typeof obj.file.size==='number' ? bytes(obj.file.size) : ''); card.appendChild(meta);
+        const act=document.createElement('div'); act.className='mgr-actions';
+        const bOpen=document.createElement('button'); bOpen.type='button'; bOpen.className='btn'; bOpen.textContent='Open'; bOpen.onclick=()=>openViewer(obj.url, obj.kind, obj.name||'');
+        const bDl=document.createElement('a'); bDl.href=obj.url; bDl.download=obj.name||'file'; bDl.className='btn ghost'; bDl.textContent='Download';
+        const bRep=document.createElement('button'); bRep.type='button'; bRep.className='btn ghost'; bRep.textContent='Replace';
+        const bRem=document.createElement('button'); bRem.type='button'; bRem.className='btn ghost'; bRem.textContent='Remove';
+        act.append(bOpen, bDl, bRep, bRem); card.appendChild(act);
+        bRep.onclick=()=>{
+          const r=document.createElement('input'); r.type='file'; r.accept=input.accept; r.onchange=()=>{
+            const nf=r.files && r.files[0]; if(!nf) return;
+            try{ if(obj.url && obj.url.startsWith('blob:')){ URL.revokeObjectURL(obj.url); window.__blobURLs && window.__blobURLs.delete && window.__blobURLs.delete(obj.url); } }catch{}
+            const url=URL.createObjectURL(nf);
+            obj.file=nf; obj.url=url; obj.kind = nf.type.startsWith('image/') ? 'image' : (nf.type==='application/pdf' ? 'pdf' : 'html'); obj.name=nf.name; obj.type=nf.type; obj.size=nf.size;
+            render(); onUpdate && onUpdate(filesArr);
+          }; r.click();
+        };
+        bRem.onclick=()=>{
+          const gone = filesArr.splice(idx,1)[0];
+          try{ if(gone && gone.url && gone.url.startsWith('blob:')){ URL.revokeObjectURL(gone.url); window.__blobURLs && window.__blobURLs.delete && window.__blobURLs.delete(gone.url); } }catch{}
+          render(); onUpdate && onUpdate(filesArr);
+        };
+        card.addEventListener('click',(e)=>{
+          if(e.target && (e.target===bOpen || e.target===bDl || e.target===bRep || e.target===bRem)) return;
+          openViewer(obj.url, obj.kind, obj.name||'');
+        });
+        grid.appendChild(card);
+      });
+    }
+
+    function close(){ root.classList.remove('open'); root.innerHTML=''; window.__confirmOpen=false; }
+    // drag/drop + browse hookup
+    function onDrop(e){ e.preventDefault(); drop.classList.remove('over'); const f=e.dataTransfer && e.dataTransfer.files; if(f && f.length) handleFiles(f); }
+    function onDragOver(e){ e.preventDefault(); drop.classList.add('over'); }
+    function onDragLeave(){ drop.classList.remove('over'); }
+
+    drop.addEventListener('dragover', onDragOver);
+    drop.addEventListener('dragleave', onDragLeave);
+    drop.addEventListener('drop', onDrop);
+    browse.onclick = ()=> input.click();
+    input.onchange = ()=>{ if(input.files && input.files.length) handleFiles(input.files); };
+
+    root.classList.add('open');
+    root.addEventListener('click', (e)=>{ if(e.target===root) close(); });
+    document.addEventListener('keydown', function esc(e){ if(e.key==='Escape'){ close(); document.removeEventListener('keydown', esc); } });
+    render();
+  };
+})();
+
+// === Nice confirmation dialog returning a Promise<boolean> ===
+window.confirmDialog = function(opts){
+  if(window.__confirmOpen){return Promise.resolve(false);} window.__confirmOpen=true;
+  return new Promise((resolve)=>{
+    const title = (opts && opts.title) || 'Are you sure?';
+    const name = (opts && opts.name) || '';
+    const showName = (opts && opts.showName) || false;
+    const body = (opts && opts.body) || 'This action cannot be undone.';
+    const confirmText = (opts && opts.confirmText) || 'Delete';
+    const cancelText = (opts && opts.cancelText) || 'Cancel';
+    const tone = (opts && opts.tone) || 'danger';
+    const icon = (opts && opts.icon) || (tone==='danger' ? '⚠️' : 'ℹ️');
+
+    let root = document.getElementById('confirmRoot');
+    if(!root){ root = document.createElement('div'); root.id='confirmRoot'; root.className='confirm-root'; document.body.appendChild(root); }
+    root.innerHTML='';
+
+    const box = document.createElement('div'); box.className='confirm'; root.appendChild(box);
+    const head = document.createElement('div'); head.className='confirm-head';
+    const ic = document.createElement('div'); ic.className='icon'; ic.textContent=icon;
+    const h = document.createElement('div'); h.className='confirm-title'; h.textContent= title + (showName && name? (' ' + name) : '');
+    head.appendChild(ic);
+    head.appendChild(h);
+    const bodyEl = document.createElement('div'); bodyEl.className='confirm-body'; bodyEl.textContent=body;
+    const foot = document.createElement('div'); foot.className='confirm-foot';
+    const cancel = document.createElement('button'); cancel.className='btn ghost'; cancel.textContent=cancelText;
+    const ok = document.createElement('button'); ok.className='btn ' + (tone==='danger' ? 'danger' : ''); ok.textContent=confirmText;
+    foot.append(cancel, ok);
+    box.append(head, bodyEl, foot);
+
+    function close(){ root.classList.remove('open'); root.innerHTML=''; window.__confirmOpen=false; }
+    cancel.onclick = ()=>{ cancel.disabled=true; ok.disabled=true; resolve(false); close(); };
+    ok.onclick = ()=>{ cancel.disabled=true; ok.disabled=true; resolve(true); close(); };
+    root.classList.add('open');
+    root.addEventListener('click', (e)=>{ if(e.target===root) { resolve(false); close(); } });
+    document.addEventListener('keydown', function esc(e){ if(e.key==='Escape'){ resolve(false); close(); document.removeEventListener('keydown', esc); } });
+  });
+};
+
+// === Enhanced inline edit for field labels (match logo/pageName) ===
+(function(){
+  if(window.__labelsEnhanced) return; window.__labelsEnhanced = true;
+  function enable(el, getFD){
+    if(!el || el.dataset.inlineReady2) return;
+    el.dataset.inlineReady2 = '1';
+    el.style.cursor = 'text';
+    let originalText = '';
+    function begin(){
+      if((typeof demoMode!=='undefined' && demoMode) || (document.body && document.body.classList && document.body.classList.contains('demo-mode'))) return;
+      originalText = (el.textContent||'').trim();
+      el.setAttribute('contenteditable','true'); if(!el.hasAttribute('tabindex')) el.setAttribute('tabindex','0'); if(!el.hasAttribute('role')) el.setAttribute('role','textbox');
+      el.setAttribute('data-editing','1');
+      el.focus();
+      try{ document.execCommand && document.execCommand('selectAll', false, null);}catch{}
+    }
+    function commit(){
+      if((typeof demoMode!=='undefined' && demoMode) || (document.body && document.body.classList && document.body.classList.contains('demo-mode'))) return;
+      const v=(el.textContent||'').trim();
+      const fd = getFD && getFD();
+      if(fd && v && v!==fd.name){ fd.name=v; render?.(); }
+      el.removeAttribute('data-editing');
+      el.removeAttribute('contenteditable');
+    }
+    function cancel(){
+      el.textContent = originalText;
+      el.removeAttribute('data-editing');
+      el.removeAttribute('contenteditable');
+    }
+    el.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); begin(); });
+    el.addEventListener('keydown', (e)=>{
+      if(e.key==='Enter'){ e.preventDefault(); el.blur(); }
+      if(e.key==='Escape'){ e.preventDefault(); cancel(); el.blur(); }
+    });
+    el.addEventListener('blur', commit);
+  }
+
+  function boot(root){
+    (root||document).querySelectorAll('.fcard').forEach(card=>{
+      const fid = card.dataset && card.dataset.nid;
+      const labelHost = card.querySelector('label .label-editable') || card.querySelector('label');
+      if(!fid || !labelHost) return;
+      enable(labelHost, ()=> (typeof fieldById==='function') ? fieldById(fid) : null);
+    });
+  }
+  const _render = window.render;
+  if(_render){
+    window.render = function(){ _render.apply(this, arguments); try{ boot(); }catch{} };
+  }
+  try{ boot(); }catch{}
+})();
+
+// Robustly open inspector and switch to a specific tab name
+
+// Stronger helper: waits with MutationObserver and fuzzy-matches tab text
+window.openInspectorAndTab = function(fieldId, tabName){
+  try{ selectNode(fieldId); }catch{}
+  try{ openInspector(fieldId); }catch{}
+  const deadline = Date.now() + 5000; // wait up to 5s
+  function tryClick(){
+    const tabsEl = document.getElementById('inspTabs');
+    if(tabsEl){
+      const btns = Array.from(tabsEl.querySelectorAll('button'));
+      if(btns.length){
+        const want = (tabName||'').toLowerCase();
+        // fuzzy matcher: contains word, ignores spaces/icons
+        let target = btns.find(b => (b.textContent||'').toLowerCase().replace(/[^a-z]/g,'').includes(want.replace(/[^a-z]/g,'')));
+        if(!target && want){
+          // fallback: first button that starts with same letter
+          target = btns.find(b => (b.textContent||'').trim().toLowerCase().startsWith(want[0]||''));
+        }
+        (target||btns[0]).click();
+        return true;
+      }
+    }
+    return false;
+  }
+  if(tryClick()) return;
+  const obs = new MutationObserver(() => {
+    if(tryClick()){ obs.disconnect(); }
+    else if(Date.now()>deadline){ obs.disconnect(); }
+  });
+  obs.observe(document.querySelector('#designerCard') || document.body, {childList:true, subtree:true});
+  // also poll as a backup
+  const timer = setInterval(()=>{
+    if(tryClick() || Date.now()>deadline){ clearInterval(timer); }
+  }, 80);
+};
+
+// === Unified Inline Editing (logo, page header, sections, field labels) ===
+(function(){
+  if(window.__inlineUnified) return; window.__inlineUnified = true;
+
+  function beginEdit(el){
+    if(!el || (typeof demoMode!=='undefined' && demoMode)) return false;
+    if(el.dataset.editing==='1') return true;
+    el.dataset.editing='1';
+    el.setAttribute('contenteditable','true'); if(!el.hasAttribute('tabindex')) el.setAttribute('tabindex','0'); if(!el.hasAttribute('role')) el.setAttribute('role','textbox');
+    el.focus();
+    try{ document.execCommand && document.execCommand('selectAll', false, null);}catch{}
+    return true;
+  }
+  function endEdit(el, commit, onSave, original){
+    if(!el) return;
+    el.removeAttribute('contenteditable');
+    el.removeAttribute('data-editing');
+    if(commit){
+      const v=(el.textContent||'').trim();
+      if(typeof onSave==='function') onSave(v, original);
+    }else{
+      el.textContent = original;
+    }
+  }
+  function wire(el, onSave, opts){
+    if(!el) return;
+    let original='';
+    const start = (e)=>{
+      if((typeof demoMode!=='undefined' && demoMode) || (document.body && document.body.classList && document.body.classList.contains('demo-mode'))) return;
+      // avoid when clicking an input nested in label (checkbox/radio)
+      if(e && e.target && (/^(input|select|textarea)$/i).test(e.target.tagName)) return;
+      original=(el.textContent||'').trim();
+      if(beginEdit(el)){ e && e.stopPropagation(); }
+    };
+    const onKey=(e)=>{
+      if(el.dataset.editing!=='1') return;
+      if(e.key==='Enter'){ e.preventDefault(); el.blur(); }
+      if(e.key==='Escape'){ e.preventDefault(); endEdit(el,false,onSave,original); el.blur(); }
+    };
+    const onBlur=()=>{
+      if(el.dataset.editing!=='1') return;
+      endEdit(el,true,onSave,original);
+    };
+    el.addEventListener('click', function(e){ e.preventDefault(); start(e); });
+    el.addEventListener('keydown', onKey);
+    el.addEventListener('blur', onBlur);
+  }
+
+  // Field labels (within .fcard)
+  function wireFieldLabels(root){
+    (root||document).querySelectorAll('.fcard').forEach(card=>{
+      const fid = card.dataset && card.dataset.nid;
+      if(!fid) return;
+      const fd = (typeof fieldById==='function') ? fieldById(fid) : null;
+      const labelEl = card.querySelector('label .label-editable') || card.querySelector('label');
+      if(!labelEl || !fd) return;
+      wire(labelEl, (v)=>{ if(v && v!==fd.name){ fd.name=v; if(typeof render==='function') renderDebounced(); } });
+    });
+  }
+
+  // Section titles (assume .section-name is the editable span)
+  function wireSections(root){
+    (root||document).querySelectorAll('.section-name').forEach(node=>{
+      const sid = node.closest('[data-sid]')?.getAttribute('data-sid');
+      wire(node, (v)=>{
+        if(!v) return;
+        try{
+          if(typeof sectionById==='function'){ const s=sectionById(sid); if(s && s.name!==v){ s.name=v; render && render(); } }
+          else { node.textContent=v; }
+        }catch{ node.textContent=v; }
+      });
+    });
+  }
+
+  // Page header text (assume #pageName)
+  function wirePageHeader(root){
+    const el = (root||document).querySelector('#pageName');
+    if(!el) return;
+    wire(el, (v)=>{
+      if(!v) return;
+      try{
+        if(typeof setPageName==='function'){ setPageName(v); }
+        else { el.textContent=v; }
+      }catch{ el.textContent=v; }
+    });
+  }
+
+  // Logo text (assume #logoText or .logo-text)
+  function wireLogo(root){
+    const el = (root||document).querySelector('#logoText, .logo-text');
+    if(!el) return;
+    wire(el, (v)=>{
+      if(!v) return;
+      try{
+        if(typeof setLogoText==='function'){ setLogoText(v); }
+        else { el.textContent=v; }
+      }catch{ el.textContent=v; }
+    });
+  }
+
+  function boot(root){
+    wireFieldLabels(root);
+    wireSections(root);
+    wirePageHeader(root);
+    wireLogo(root);
+  }
+
+  // Re-run after each render
+  const _render = window.render;
+  if(_render){
+    window.render = function(){ _render.apply(this, arguments); try{ boot(); }catch{} };
+  }
+  try{ boot(); }catch{}
+})();
+
+// === Ensure logo inline editing works on initial load (DOM-ready + observer) ===
+(function(){
+  const sel = '#logoText, .logo-text, [data-role="logo-text"]';
+  function bind(el){
+    if(!el || el.dataset.logoInlineReady) return;
+    el.dataset.logoInlineReady = '1';
+    el.style.cursor = 'text';
+    let original='';
+    function begin(){
+      if((typeof demoMode!=='undefined' && demoMode) || (document.body && document.body.classList && document.body.classList.contains('demo-mode'))) return;
+      original=(el.textContent||'').trim();
+      el.setAttribute('contenteditable','true'); if(!el.hasAttribute('tabindex')) el.setAttribute('tabindex','0'); if(!el.hasAttribute('role')) el.setAttribute('role','textbox');
+      el.setAttribute('data-editing','1');
+      el.focus();
+      try{ document.execCommand && document.execCommand('selectAll', false, null);}catch{}
+    }
+    function cancel(){
+      el.textContent = original;
+      el.removeAttribute('contenteditable'); el.removeAttribute('data-editing');
+    }
+    function commit(){
+      if((typeof demoMode!=='undefined' && demoMode) || (document.body && document.body.classList && document.body.classList.contains('demo-mode'))) return;
+      const v=(el.textContent||'').trim();
+      try{ if(typeof setLogoText==='function' && v){ setLogoText(v); } else { el.textContent=v; } }catch{ el.textContent=v; }
+      el.removeAttribute('contenteditable'); el.removeAttribute('data-editing');
+    }
+    el.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); begin(); });
+    el.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); el.blur(); } if(e.key==='Escape'){ e.preventDefault(); cancel(); el.blur(); } });
+    el.addEventListener('blur', commit);
+  }
+  function find(){ const el = document.querySelector(sel); if(el) bind(el); }
+  if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', find, {once:true}); } else { find(); }
+  const mo = new MutationObserver(()=>find());
+  mo.observe(document.querySelector('#designerCard') || document.documentElement, {childList:true, subtree:true});
+})();
+
+// Ensure inline editing is enabled immediately on load (even before first render)
+(function(){
+  function kick(){
+    try{
+      if(window.__inlineUnified && typeof render==='function'){ /* no-op, unified already hooks render */ }
+      // Try to bind logo explicitly (id/class/data-role)
+      const sel = '#logoText, .logo-text, [data-role="logo-text"]';
+      const logo = document.querySelector(sel);
+      if(logo && !logo.dataset.logoInlineReady){ logo.click(); logo.blur(); } // primes listeners without staying in edit
+    }catch(e){}
+  }
+  if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', kick, {once:true}); } else { kick(); }
+})();
+
+// === Normalize field labels & unify inline editing behavior with sections ===
+(function(){
+  if(window.__normalizeLabels) return; window.__normalizeLabels = true;
+
+  function isDemo(){
+    return (typeof demoMode!=='undefined' && demoMode) || (document.body && document.body.classList && document.body.classList.contains('demo-mode'));
+  }
+
+  function fieldModelFromCard(card){
+    try{
+      const fid = card && card.dataset && card.dataset.nid;
+      return (fid && typeof fieldById==='function') ? fieldById(fid) : null;
+    }catch{ return null; }
+  }
+
+  // Ensure each label has a dedicated .label-editable span (text only, not the control)
+  function normalizeLabels(root){
+    (root||document).querySelectorAll('.fcard').forEach(card=>{
+      const label = card.querySelector('label');
+      if(!label) return;
+      if(label.querySelector('.label-editable')) return; // already normalized
+      const fd = fieldModelFromCard(card);
+      const span = document.createElement('span');
+      span.className = 'label-editable';
+      // Prefer model name to avoid duplicating existing text nodes
+      span.textContent = (fd && fd.name) ? fd.name : (label.textContent||'').trim();
+      // Insert span at the start of the label content
+      label.insertBefore(span, label.firstChild || null);
+    });
+  }
+
+  // Wire inline editing exactly like sections
+  function wireInline(root){
+    (root||document).querySelectorAll('.fcard').forEach(card=>{
+      const fd = fieldModelFromCard(card);
+      const el = card.querySelector('label .label-editable');
+      if(!el || el.dataset.inlineReadySecLike) return;
+      el.dataset.inlineReadySecLike='1';
+      el.style.cursor='text';
+      let original='';
+      el.addEventListener('click', (e)=>{
+        if(isDemo()) return;
+        e.preventDefault(); e.stopPropagation();
+        original=(el.textContent||'').trim();
+        el.setAttribute('contenteditable','true'); if(!el.hasAttribute('tabindex')) el.setAttribute('tabindex','0'); if(!el.hasAttribute('role')) el.setAttribute('role','textbox');
+        el.setAttribute('data-editing','1');
+        el.focus();
+        try{ document.execCommand && document.execCommand('selectAll', false, null);}catch{}
+      });
+      el.addEventListener('keydown', (e)=>{
+        if(e.key==='Enter'){ e.preventDefault(); el.blur(); }
+        if(e.key==='Escape'){ e.preventDefault(); el.textContent=original; el.blur(); }
+      });
+      el.addEventListener('blur', ()=>{
+        if(isDemo()) return;
+        const v=(el.textContent||'').trim();
+        if(fd && v && v!==fd.name){ fd.name=v; try{ render && render(); }catch{} }
+        el.removeAttribute('contenteditable'); el.removeAttribute('data-editing');
+      });
+    });
+  }
+
+  // Logo: apply the same pattern and prevent anchor default if logo is a link
+  function wireLogo(){
+    const el = document.querySelector('#logoText, .logo-text, [data-role="logo-text"]');
+    if(!el || el.dataset.inlineReadySecLike) return;
+    el.dataset.inlineReadySecLike='1';
+    el.style.cursor='text';
+    let original='';
+    el.addEventListener('click', (e)=>{
+      if(isDemo()) return;
+      e.preventDefault(); e.stopPropagation();
+      original=(el.textContent||'').trim();
+      el.setAttribute('contenteditable','true'); if(!el.hasAttribute('tabindex')) el.setAttribute('tabindex','0'); if(!el.hasAttribute('role')) el.setAttribute('role','textbox');
+      el.setAttribute('data-editing','1');
+      el.focus();
+      try{ document.execCommand && document.execCommand('selectAll', false, null);}catch{}
+    });
+    el.addEventListener('keydown', (e)=>{
+      if(e.key==='Enter'){ e.preventDefault(); el.blur(); }
+      if(e.key==='Escape'){ e.preventDefault(); el.textContent=original; el.blur(); }
+    });
+    el.addEventListener('blur', ()=>{
+      if(isDemo()) return;
+      const v=(el.textContent||'').trim();
+      try{ if(typeof setLogoText==='function' && v){ setLogoText(v); } else { el.textContent=v; } }catch{ el.textContent=v; }
+      el.removeAttribute('contenteditable'); el.removeAttribute('data-editing');
+    });
+  }
+
+  function boot(root){
+    normalizeLabels(root);
+    wireInline(root);
+    wireLogo();
+  }
+
+  // Run now and after each render; also observe DOM for late content
+  const _render = window.render;
+  if(_render){
+    window.render = function(){ _render.apply(this, arguments); try{ boot(); }catch{} };
+  }
+  if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', ()=>boot(), {once:true}); } else { try{ boot(); }catch{} }
+  const mo = new MutationObserver((() => { const __deb=(window.__bootDeb||(window.__bootDeb=__debounce(()=>boot(),80))); __deb(); }));
+  mo.observe(document.querySelector('#designerCard') || document.body || document.documentElement, {childList:true, subtree:true});
+})();
+
+<!-- removed: disable-inline-edit IIFE -->
+
+</script>
+
+<div id="viewerRoot" class="viewer-root" role="dialog" aria-modal="true"></div>
+
+<button id="fullscreenBtn" class="btn ghost fullscreen-btn" title="Full screen">⛶</button>
+
+    <script>
+    // injected debounce helper
+    function __debounce(fn, wait){
+      let t; return function(){ const ctx=this, args=arguments;
+        clearTimeout(t); t=setTimeout(function(){ fn.apply(ctx,args); }, wait||60);
+      };
+    }
+    </script>
+    
+
+<script>
+// First-load inline-edit guard (idempotent)
+(function(){
+  function ensureInlineReady(){
+    try{
+      if(document.body.classList.contains('demo-mode')) return; // demo mode: no inline edit
+      // Prefer the app's own unified module if present
+      if (window.__inlineUnified && typeof window.__inlineUnified.boot === 'function'){
+        window.__inlineUnified.boot();
+        return;
+      }
+      // Minimal fallback: make key elements editable
+      var targets = [];
+      var siteName = document.querySelector('#siteName');
+      if (siteName) targets.push(siteName);
+      document.querySelectorAll('.fcard label .label-editable').forEach(function(el){ targets.push(el); });
+      targets.forEach(function(el){
+        if(!el.getAttribute('contenteditable')) el.setAttribute('contenteditable','true'); if(!el.hasAttribute('tabindex')) el.setAttribute('tabindex','0'); if(!el.hasAttribute('role')) el.setAttribute('role','textbox');
+      });
+    }catch(e){ /* noop */ }
+  }
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded', ensureInlineReady, {once:true});
+  } else {
+    ensureInlineReady();
+  }
+  // Run again shortly after other boot scripts bind
+  setTimeout(ensureInlineReady, 150);
+})();
+</script>
+
+<script>
+// Robust inline editing: first-click works (Edit mode), caret preserved
+(function(){
+  if (window.__inlineHardGuardInstalled) return; window.__inlineHardGuardInstalled = true;
+
+  function isDemo(){ return document.body.classList.contains('demo-mode'); }
+
+  function placeCaretAtEnd(el){
+    try{
+      el.focus();
+      var range = document.createRange();
+      range.selectNodeContents(el);
+      range.collapse(false);
+      var sel = window.getSelection();
+      sel.removeAllRanges(); sel.addRange(range);
+    }catch(e){ el.focus(); }
+  }
+  function placeCaretAtPoint(el, ev){
+    try{
+      el.focus();
+      var sel = window.getSelection();
+      var range = null;
+      if (document.caretRangeFromPoint){
+        range = document.caretRangeFromPoint(ev.clientX, ev.clientY);
+      } else if (document.caretPositionFromPoint){
+        var pos = document.caretPositionFromPoint(ev.clientX, ev.clientY);
+        if (pos){ range = document.createRange(); range.setStart(pos.offsetNode, pos.offset); }
+      }
+      if (range){
+        sel.removeAllRanges();
+        sel.addRange(range);
+        return true;
+      }
+    }catch(e){}
+    return false;
+  }
+    try{
+      el.focus();
+      var range = document.createRange();
+      range.selectNodeContents(el);
+      range.collapse(false);
+      var sel = window.getSelection();
+      sel.removeAllRanges(); sel.addRange(range);
+    }catch(e){ el.focus(); }
+  }
+
+  function beginInline(el, ev){
+    if (isDemo()) return;
+    // ensure only one editing at a time
+    document.querySelectorAll('[data-inline-editing="1"]').forEach(function(other){
+      if (other!==el){ other.removeAttribute('data-inline-editing'); other.removeAttribute('contenteditable'); }
+    });
+    el.setAttribute('contenteditable','true'); if(!el.hasAttribute('tabindex')) el.setAttribute('tabindex','0'); if(!el.hasAttribute('role')) el.setAttribute('role','textbox');
+    el.setAttribute('data-inline-editing','1');
+    // prevent parent click toggles from interfering
+    el.addEventListener('mousedown', function(ev){ ev.stopPropagation(); }, {once:true, capture:true});
+    // key handling
+    function onKey(e){
+      if (e.key==='Escape'){ e.preventDefault(); el.blur(); }
+      if (e.key==='Enter'){ e.preventDefault(); el.blur(); }
+    }
+    function onBlur(){
+      el.removeEventListener('keydown', onKey);
+      el.removeEventListener('blur', onBlur);
+      el.removeAttribute('data-inline-editing');
+      // persist via existing app contracts if present
+      if (el.id==='siteName' && window.localStorage){
+        try{ localStorage.setItem('site_name', el.textContent.trim()); }catch{}
+      }
+      // leave contenteditable true for subsequent edits to avoid races
+      // (if your unified module prefers removing it, it can still do so later)
+    }
+    el.addEventListener('keydown', onKey);
+    el.addEventListener('blur', onBlur);
+    // position caret where user clicked; fallback to end
+    setTimeout(function(){ if(!(ev && placeCaretAtPoint(el, ev))){ placeCaretAtEnd(el); } }, 0);
+  }
+
+  function bindInlineTargets(root){
+    if (isDemo()) return;
+    var targets = [];
+    var site = root.querySelector('#siteName'); if(site) targets.push(site);
+    root.querySelectorAll('.fcard label .label-editable').forEach(function(el){ targets.push(el); });
+    targets.forEach(function(el){
+      if (!el.__inlineBound){
+        el.__inlineBound = true;
+        el.addEventListener('pointerdown', function(ev){
+  if (isDemo()) return;
+  ev.stopPropagation();
+  beginInline(el, ev);
+}, {capture:true});
+// prevent bubbling click from triggering other handlers (like logo picker)
+el.addEventListener('click', function(ev){ if(!isDemo()){ ev.stopPropagation(); ev.preventDefault(); } });
+        // ensure editable attribute exists so caret shows immediately on focus
+        if(!el.hasAttribute('contenteditable')) el.setAttribute('contenteditable','true'); if(!el.hasAttribute('tabindex')) el.setAttribute('tabindex','0'); if(!el.hasAttribute('role')) el.setAttribute('role','textbox');
+      }
+    });
+  }
+
+  // initial and after boot
+  if (document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded', function(){ bindInlineTargets(document); }, {once:true});
+  } else {
+    bindInlineTargets(document);
+  }
+  // re-bind on relevant renders (scoped observer)
+  var container = document.querySelector('#designerCard') || document.body;
+  var rebind = (function(){ let t; return function(){ clearTimeout(t); t=setTimeout(function(){ bindInlineTargets(container); }, 60); }; })();
+  try{
+    var mo = new MutationObserver(rebind);
+    mo.observe(container, {childList:true, subtree:true});
+  }catch(e){ /* ignore */ }
+})();
+</script>
+
+<script>
+(function(){
+  if (window.__inlineFinalGuardInstalled) return; window.__inlineFinalGuardInstalled = true;
+
+  // Prefer Edit on first load unless explicitly stored (won't override a saved choice)
+  try{
+    var saved = localStorage.getItem('demo_mode'); // expect '1' when demo
+    if (saved !== '1' && document.body.classList.contains('demo-mode')){
+      document.body.classList.remove('demo-mode');
+    }
+  }catch(e){}
+
+  function isDemo(){ return document.body.classList.contains('demo-mode'); }
+
+  function caretAtPoint(el, ev){
+    try{
+      el.focus();
+      var sel = window.getSelection();
+      var range = null;
+      if (document.caretRangeFromPoint){
+        range = document.caretRangeFromPoint(ev.clientX, ev.clientY);
+      } else if (document.caretPositionFromPoint){
+        var pos = document.caretPositionFromPoint(ev.clientX, ev.clientY);
+        if (pos){ range = document.createRange(); range.setStart(pos.offsetNode, pos.offset); }
+      }
+      if (range){
+        sel.removeAllRanges(); sel.addRange(range);
+        return true;
+      }
+    }catch(e){}
+    return false;
+  }
+  function caretAtEnd(el){
+    try{
+      el.focus();
+      var r = document.createRange(); r.selectNodeContents(el); r.collapse(false);
+      var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+    }catch(e){ el.focus(); }
+  }
+
+  function beginInline(el, ev){
+    if (isDemo()) return;
+    // Ensure editable + focusability
+    el.setAttribute('contenteditable','true');
+    if(!el.hasAttribute('tabindex')) el.setAttribute('tabindex','0');
+    if(!el.hasAttribute('role')) el.setAttribute('role','textbox');
+
+    // Kill interfering click immediately
+    if (ev){ ev.preventDefault(); ev.stopPropagation(); }
+
+    // Place caret where clicked (fallback end)
+    setTimeout(function(){ if(!(ev && caretAtPoint(el, ev))){ caretAtEnd(el); } }, 0);
+
+    // Save on blur for siteName
+    function onBlur(){
+      el.removeEventListener('blur', onBlur);
+      if (el.id==='siteName'){
+        try{ localStorage.setItem('site_name', el.textContent.trim()); }catch{}
+      }
+    }
+    el.addEventListener('blur', onBlur, {once:true});
+  }
+
+  function bindTarget(el){
+    if (el.__inlineBoundFinal) return; el.__inlineBoundFinal = true;
+    // Capture early on pointerdown so no other handler can steal it
+    el.addEventListener('pointerdown', function(ev){
+      if (isDemo()) return;
+      beginInline(el, ev);
+    }, {capture:true});
+    // Also block the bubbling click afterwards in edit mode
+    el.addEventListener('click', function(ev){
+      if (!isDemo()){ ev.preventDefault(); ev.stopPropagation(); }
+    });
+  }
+
+  function apply(){
+    if (isDemo()) return;
+    var sn = document.querySelector('#siteName'); if (sn) bindTarget(sn);
+    document.querySelectorAll('.fcard label .label-editable').forEach(bindTarget);
+
+    // If there is a logoBox or similar, stop it in edit mode from opening pickers on text
+    var logoBox = document.querySelector('#logoBox, .logo-box, .brand .logo, .brand .logo-box');
+    if (logoBox && sn){
+      logoBox.addEventListener('click', function(ev){
+        // if the click starts on the text node/element itself in edit mode, do not let parent handle it
+        if (!isDemo() && (ev.target===sn || sn.contains(ev.target))){
+          ev.stopPropagation(); ev.preventDefault();
+        }
+      }, true);
+    }
+  }
+
+  if (document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded', apply, {once:true});
+  }else{
+    apply();
+  }
+  // Watch for re-renders inside designer
+  var container = document.querySelector('#designerCard') || document.body;
+  try{
+    var mo = new MutationObserver(function(){ setTimeout(apply, 30); });
+    mo.observe(container, {childList:true, subtree:true});
+  }catch(e){}
+})();
+</script>
+
+<script id="inline-edit-style-boot">
+/* Style toggling for inline editing (idempotent) */
+(function(){
+  if (window.__inlineStyleBoot) return; window.__inlineStyleBoot = true;
+  function isDemo(){ return document.body.classList.contains('demo-mode'); }
+
+  // Delegate focus/blur to set data attribute for styling
+  document.addEventListener('focusin', function(ev){
+    var el = ev.target;
+    if (!el || !el.classList || !el.classList.contains('label-editable')) return;
+    if (isDemo()) return;
+    el.setAttribute('data-inline-editing','1');
+  });
+  document.addEventListener('focusout', function(ev){
+    var el = ev.target;
+    if (!el || !el.classList || !el.classList.contains('label-editable')) return;
+    el.removeAttribute('data-inline-editing');
+  });
+
+  // Ensure label-editables are focusable and editable in Edit mode
+  function prime(){
+    if (isDemo()) return;
+    document.querySelectorAll('.label-editable').forEach(function(el){
+      if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex','0');
+      // Don't force contenteditable here; respect app logic—styles still apply on focus if enabled.
+    });
+  }
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', prime, {once:true});
+  } else { prime(); }
+
+  // Re-prime after dynamic renders
+  try{
+    var host = document.querySelector('#designerCard') || document.body;
+    var mo = new MutationObserver(function(){ setTimeout(prime, 50); });
+    mo.observe(host, {childList:true, subtree:true});
+  }catch(e){}
+})();
+</script>
+
+
+<script id="opt-inline-js">
+(function(){
+  if (window.__optInlineInstalled) return; window.__optInlineInstalled = true;
+  function isDemo(){ return document.body.classList.contains('demo-mode'); }
+  function slug(x){ return String(x||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40) || 'item'; }
+  function uid(){ return Math.random().toString(36).slice(2,9); }
+
+  function closestFieldId(el){
+    var host = el.closest('[data-nid]');
+    return host ? host.getAttribute('data-nid') : null;
+  }
+
+  // SELECT helpers
+  function addSelectControls(select){
+    if (!select || select.__optDecorated) return;
+    select.__optDecorated = true;
+
+    // Insert an inline controls row after the select
+    var wrap = document.createElement('div');
+    wrap.className = 'opt-inline';
+    wrap.innerHTML = '<button class="opt-action add" data-role="add-select-option" title="Add option">option</button><small class="hint">(double‑click an option to remove)</small>';
+    select.insertAdjacentElement('afterend', wrap);
+
+    // Wire add
+    wrap.querySelector('[data-role="add-select-option"]').addEventListener('click', function(ev){
+      ev.preventDefault(); ev.stopPropagation();
+      if (isDemo()) return (window.toast && toast('Demo mode: editing disabled'));
+      var label = prompt('Option label?'); if(!label) return;
+      var val = prompt('Option value? (leave empty to use label slug)') || slug(label);
+      var opt = document.createElement('option'); opt.value = val; opt.textContent = label;
+      select.appendChild(opt); select.value = val;
+
+      // update model if available
+      var fid = closestFieldId(select);
+      if (fid && window.formModel){
+        for (const sec of (formModel.sections||[])){
+          const fld = (sec.children||[]).find(x=>x.id===fid);
+          if (fld){
+            if (!Array.isArray(fld.options)) fld.options = [];
+            fld.options.push({label:label, value:val});
+            break;
+          }
+        }
+      }
+      if (window.renderDebounced) renderDebounced();
+    });
+
+    // Wire dblclick remove on options
+    select.addEventListener('dblclick', function(ev){
+      var tgt = ev.target;
+      if (!(tgt && tgt.tagName==='OPTION')) return;
+      if (isDemo()) return;
+      if (!confirm('Remove option "'+tgt.textContent+'"?')) return;
+      // update model
+      var fid = closestFieldId(select);
+      if (fid && window.formModel){
+        for (const sec of (formModel.sections||[])){
+          const fld = (sec.children||[]).find(x=>x.id===fid);
+          if (fld && Array.isArray(fld.options)){
+            fld.options = fld.options.filter(o => !(o.label===tgt.textContent && o.value===tgt.value));
+            break;
+          }
+        }
+      }
+      tgt.remove();
+      if (window.renderDebounced) renderDebounced();
+    });
+  }
+
+  // CHECKBOX helpers
+      function syncEditModeUI(){
+    var demo = document.body.classList.contains('demo-mode');
+    if (demo){
+      // Remove all controls to ensure nothing remains in Demo
+      document.querySelectorAll('.opt-inline, /*cb-row-tools removed*/').forEach(function(el){ el.remove(); });
+      // Also detach dblclick handlers by cloning selects (lightweight reset)
+      document.querySelectorAll('select').forEach(function(sel){
+        if (!sel.closest('[data-nid]')) return;
+        var clone = sel.cloneNode(true);
+        sel.parentNode.replaceChild(clone, sel);
+      });
+    } else {
+      // Rebuild controls for current DOM
+      decorate(document);
+    }
+  }
+
+  function decorate(scope){
+    var root = scope || document;
+    // SELECTS: only in Edit mode, and only those inside form preview
+    root.querySelectorAll('select').forEach(function(sel){
+      // require that the select belongs to a field wrapper with data-nid so we don't touch random selects
+      if (!sel.closest('[data-nid]')) return;
+      if (isDemo()) return; // keep UI clean in Demo
+      addSelectControls(sel);
+    });
+
+    /* Checkbox editing removed globally by request. */
+
+  // Initial & after renders
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', function(){ decorate(document); }, {once:true});
+  } else {
+    decorate(document);
+  }
+  // Enforce initial mode visibility
+  syncEditModeUI();
+  try{
+    var host = document.querySelector('#designerCard') || document.body;
+    var mo = new MutationObserver(function(){ decorate(host); });
+    mo.observe(host, {childList:true, subtree:true});
+  try{
+    var bodMo = new MutationObserver(function(m){ m.forEach(function(rec){ if(rec.type==='attributes'){ syncEditModeUI(); } }); });
+    bodMo.observe(document.body, {attributes:true, attributeFilter:['class']});
+  }catch(e){}
+  }catch(e){}
+})();
+</script>
+
+
+<script id="mode-visibility-sync">
+(function(){
+  if (window.__modeVisibilitySync) return; window.__modeVisibilitySync = true;
+
+  function runVisibilityNow(){
+    try{
+      if (typeof updateVisibility === 'function'){
+        updateVisibility();
+      } else {
+        // Fallback: trigger a synthetic 'change' to kick any listeners
+        var root = document.querySelector('#designerCard') || document;
+        root.querySelectorAll('input, select, textarea').forEach(function(el){
+          try {
+            el.dispatchEvent(new Event('change', {bubbles:true}));
+            el.dispatchEvent(new Event('input', {bubbles:true}));
+          } catch(e){}
+        });
+      }
+    } catch(e){}
+  }
+
+  function flushVisibility(){
+    // run immediately and after a short tick to outwait pending renders
+    runVisibilityNow();
+    setTimeout(runVisibilityNow, 0);
+    setTimeout(runVisibilityNow, 60);
+  }
+
+  // On initial load, if already in demo mode, ensure conditions apply
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', function(){
+      if (document.body.classList.contains('demo-mode')) flushVisibility();
+    }, {once:true});
+  } else {
+    if (document.body.classList.contains('demo-mode')) flushVisibility();
+  }
+
+  // Observe mode toggles (body class changes)
+  try{
+    var mo = new MutationObserver(function(mutations){
+      for (var m of mutations){
+        if (m.type === 'attributes' && m.attributeName === 'class'){
+          // On entering demo mode, immediately evaluate conditions
+          if (document.body.classList.contains('demo-mode')){
+            flushVisibility();
+          }
+        }
+      }
+    });
+    mo.observe(document.body, {attributes:true, attributeFilter:['class']});
+  }catch(e){}
+})();
+</script>
+
+
+<script id="visibility-flush-hook">
+(function(){
+  if (window.__visibilityFlushHook) return; window.__visibilityFlushHook = true;
+  function __runVisibility(){
+    try{ if (typeof updateVisibility==='function') updateVisibility(); }catch(e){}
+  }
+  window.flushVisibility = function(){
+    __runVisibility();
+    setTimeout(__runVisibility, 0);
+    setTimeout(__runVisibility, 60);
+  };
+  // Wrap applyMode once
+  if (typeof window.applyMode === 'function' && !window.applyMode.__wrapped){
+    const __orig = window.applyMode;
+    window.applyMode = function(){
+      const out = __orig.apply(this, arguments);
+      try{ window.flushVisibility && window.flushVisibility(); }catch(e){}
+      return out;
+    };
+    window.applyMode.__wrapped = true;
+  }
+  // Initial check
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', function(){
+      if (document.body.classList.contains('demo-mode')) window.flushVisibility();
+    }, {once:true});
+  } else {
+    if (document.body.classList.contains('demo-mode')) window.flushVisibility();
+  }
+  // Body class observer
+  try{
+    const mo = new MutationObserver(function(m){
+      for (const rec of m){ if (rec.type==='attributes'){ window.flushVisibility(); break; } }
+    });
+    mo.observe(document.body, {attributes:true, attributeFilter:['class']});
+  }catch(e){}
+})();
+</script>
+
+
+<script id="page-header-inline-edit">
+(function(){
+  if (window.__pageHeaderInlineInstalled) return; window.__pageHeaderInlineInstalled = true;
+  function isDemo(){ return document.body.classList.contains('demo-mode'); }
+
+  function caretAtPoint(el, ev){
+    try{
+      el.focus();
+      var sel = window.getSelection();
+      var range = null;
+      if (document.caretRangeFromPoint){
+        range = document.caretRangeFromPoint(ev.clientX, ev.clientY);
+      } else if (document.caretPositionFromPoint){
+        var pos = document.caretPositionFromPoint(ev.clientX, ev.clientY);
+        if (pos){ range = document.createRange(); range.setStart(pos.offsetNode, pos.offset); }
+      }
+      if (range){ sel.removeAllRanges(); sel.addRange(range); return true; }
+    }catch(e){}
+    return false;
+  }
+  function caretAtEnd(el){
+    try{
+      el.focus();
+      var r = document.createRange(); r.selectNodeContents(el); r.collapse(false);
+      var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+    }catch(e){ el.focus(); }
+  }
+
+  function beginHeaderEdit(el, ev){
+    if (isDemo()) return;
+    el.setAttribute('contenteditable','true');
+    if(!el.hasAttribute('tabindex')) el.setAttribute('tabindex','0');
+    if(!el.hasAttribute('role')) el.setAttribute('role','textbox');
+    if (ev){ ev.preventDefault(); ev.stopPropagation(); }
+    setTimeout(function(){ if(!(ev && caretAtPoint(el, ev))){ caretAtEnd(el); } }, 0);
+
+    function onKey(e){
+      if (e.key === 'Enter'){ e.preventDefault(); el.blur(); }
+      if (e.key === 'Escape'){ e.preventDefault(); el.blur(); }
+    }
+    function onBlur(){
+      el.removeEventListener('keydown', onKey);
+      el.removeEventListener('blur', onBlur);
+      try{ localStorage.setItem('page_name', (el.textContent||'').trim()); }catch(e){}
+      // If your app has a model, update it here (optional)
+      if (typeof window.renderDebounced === 'function') renderDebounced();
+    }
+    el.addEventListener('keydown', onKey);
+    el.addEventListener('blur', onBlur, {once:true});
+  }
+
+  function bindHeader(el){
+    if (!el || el.__phInline) return; el.__phInline = true;
+    // capture early so other click handlers don't win
+    el.addEventListener('pointerdown', function(ev){
+      if (isDemo()) return;
+      beginHeaderEdit(el, ev);
+    }, {capture:true});
+    // prevent bubbling click from opening other UI when editing
+    el.addEventListener('click', function(ev){ if (!isDemo()){ ev.preventDefault(); ev.stopPropagation(); } });
+    // Ensure normal text behavior (no extra highlight)
+    el.style.cursor = 'text';
+    el.style.userSelect = 'text';
+    el.style.webkitUserSelect = 'text';
+  }
+
+  function apply(){
+    if (isDemo()) return;
+    var el = document.querySelector('#pageName') ||
+             document.querySelector('.page-title') ||
+             document.querySelector('[data-role="page-title"]');
+    if (!el){
+      var scope = document.querySelector('#designerCard') || document;
+      el = scope.querySelector('h1, h2');
+      if (el){ el.setAttribute('data-role','page-title'); }
+    }
+    if (el) bindHeader(el);
+  }
+
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', apply, {once:true});
+  } else { apply(); }
+
+  // rebind after dynamic renders
+  try{
+    var mo = new MutationObserver(function(){ apply(); });
+    mo.observe(document.body, {childList:true, subtree:true});
+  }catch(e){}
+})();
+</script>
+
+
+<script id="page-header-dom-shim">
+(function(){
+  if (window.__pageHeaderShim) return; window.__pageHeaderShim = true;
+  function apply(){
+    var headerEl = document.querySelector('#pageName') ||
+                   document.querySelector('.page-title') ||
+                   document.querySelector('[data-role="page-title"]') ||
+                   (document.querySelector('#designerCard')||document).querySelector('h1, h2');
+    if (!headerEl) return;
+
+    // Already wrapped?
+    if (headerEl.closest('.page-header')) return;
+
+    var wrapper = document.createElement('div'); wrapper.className='page-header'; 
+    var titleWrap = document.createElement('div'); titleWrap.className='title-wrap';
+    var actions = document.createElement('div'); actions.className='actions';
+    // Move header into titleWrap
+    headerEl.parentNode.insertBefore(wrapper, headerEl);
+    titleWrap.appendChild(headerEl);
+    wrapper.appendChild(titleWrap);
+    wrapper.appendChild(actions);
+
+    // Optional: add a subtitle placeholder (remove if not needed)
+    // var sub = document.createElement('div'); sub.className='subtitle'; sub.textContent='';
+    // titleWrap.appendChild(sub);
+
+    // Example action buttons (comment out if not desired)
+    // var b1=document.createElement('a'); b1.className='btn ghost'; b1.href='#'; b1.textContent='Help';
+    // var b2=document.createElement('a'); b2.className='btn primary'; b2.href='#'; b2.textContent='Save';
+    // actions.append(b1,b2);
+  }
+  if (document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', apply, {once:true}); } else { apply(); }
+  // Re-apply on dynamic render
+  try{
+    var mo=new MutationObserver(function(){ apply(); });
+    mo.observe(document.body, {childList:true, subtree:true});
+  }catch(e){}
+})();
+</script>
+
+
+<script id="page-header-golive-detector">
+(function(){
+  if (window.__phGoLiveDetector) return; window.__phGoLiveDetector = true;
+  function norm(x){ return (x||'').trim().toLowerCase(); }
+  function apply(){
+    var candidates = [
+      document.querySelector('#pageName'),
+      document.querySelector('.page-title'),
+      document.querySelector('[data-role="page-title"]')
+    ];
+    // also look for first h1/h2 inside app scope
+    var scope = document.querySelector('#designerCard') || document;
+    var h = scope.querySelector('h1, h2');
+    if (h) candidates.push(h);
+
+    candidates = candidates.filter(Boolean);
+    if (!candidates.length) return;
+    candidates.forEach(function(el){
+      var txt = norm(el.textContent);
+      if (txt === 'go live'){ 
+        var wrap = el.closest('.page-header');
+        if (wrap && !wrap.classList.contains('variant-golive')){
+          wrap.classList.add('variant-golive');
+        }
+      }
+    });
+  }
+  if (document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', apply, {once:true}); } else { apply(); }
+  // Re-apply on dynamic changes
+  try{
+    var mo=new MutationObserver(function(){ apply(); });
+    mo.observe(document.body, {childList:true, subtree:true, characterData:true});
+  }catch(e){}
+})();
+</script>
+
+</body>
+</html>
