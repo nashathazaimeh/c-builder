@@ -54,7 +54,8 @@ window.renderDebounced = window.renderDebounced || function(){ try{ if (typeof r
   .btn:disabled{opacity:.6;cursor:not-allowed}
 
 
-  .layout{display:grid;grid-template-columns:var(--side-w) 1fr;gap:0;width:100%;margin:0;min-height:calc(100vh - var(--nav-h))}
+  .layout{display:grid;grid-template-columns:var(--side-w) 1fr;gap:0;width:100%;margin:0;min-height:calc(100dvh - var(--nav-h))}
+  .layout{display:grid;grid-template-columns:var(--side-w) 1fr;gap:0;width:100%;margin:0;min-height:calc(100dvh - var(--nav-h))}
   .card{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:clamp(16px,2vw,24px)}
   .card header{font-size:clamp(20px,2.4vw,30px);font-weight:800;margin-bottom:6px}
   .card header[contenteditable="true"]{outline:none;border-radius:8px;padding:2px 6px}
@@ -198,7 +199,8 @@ window.renderDebounced = window.renderDebounced || function(){ try{ if (typeof r
   .toggle input:checked + .track .thumb{left:calc(100% - 22px)}
 
 
-  .inspector{position:fixed;top:var(--nav-h);right:0;width:var(--insp-w);height:calc(100vh - var(--nav-h));background:#fff;border-left:1px solid var(--line);box-shadow:-10px 0 25px rgba(2,8,23,.08);transform:translateX(105%);transition:transform .15s ease;z-index:90;display:flex;flex-direction:column}
+  .inspector{position:fixed;top:var(--nav-h);right:0;width:var(--insp-w);height:calc(100dvh - var(--nav-h));background:#fff;border-left:1px solid var(--line);box-shadow:-10px 0 25px rgba(2,8,23,.08);transform:translateX(105%);transition:transform .15s ease;z-index:90;display:flex;flex-direction:column}
+  .inspector{position:fixed;top:var(--nav-h);right:0;width:var(--insp-w);height:calc(100dvh - var(--nav-h));background:#fff;border-left:1px solid var(--line);box-shadow:-10px 0 25px rgba(2,8,23,.08);transform:translateX(105%);transition:transform .15s ease;z-index:90;display:flex;flex-direction:column}
   .inspector.open{transform:none}
   .insp-head{padding:12px 14px;border-bottom:1px solid var(--line);font-weight:800;display:flex;align-items:center;gap:8px}
   .insp-tabs{display:flex;gap:6px;padding:8px 12px;border-bottom:1px solid var(--line)}
@@ -824,7 +826,8 @@ body.demo-mode .cb-row-tools {
 <style id="fit-sections-fullheight">
 
 #designerCard{
-  min-height: calc(100vh - var(--nav-h));
+  min-height: calc(100dvh - var(--nav-h));
+  min-height: calc(var(--vh, 1vh) * 100 - var(--nav-h)) * 100 - var(--nav-h));
   display: flex;
   flex-direction: column;
 }
@@ -838,7 +841,8 @@ body.demo-mode .cb-row-tools {
 aside.sidebar{
   position: sticky;
   top: var(--nav-h);
-  height: calc(100vh - var(--nav-h));
+  height: calc(100dvh - var(--nav-h));
+  height: calc(var(--vh, 1vh) * 100 - var(--nav-h)) * 100 - var(--nav-h));
   overflow: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -866,7 +870,8 @@ aside.sidebar{
 .lp-preview .big{ width: clamp(64px, 10vw, 96px); height: clamp(64px, 10vw, 96px); }
 .lp-item svg{ width: clamp(40px, 8vw, 64px); height: clamp(40px, 8vw, 64px); }
 .hbtn{ width: clamp(30px, 4vw, 36px); height: clamp(30px, 4vw, 36px); }
-aside.sidebar{ top: var(--nav-h); height: calc(100vh - var(--nav-h)); }
+aside.sidebar{ top: var(--nav-h); height: calc(100dvh - var(--nav-h)); }
+aside.sidebar{ top: var(--nav-h); height: calc(100dvh - var(--nav-h)); }
 .grid4{ gap: clamp(8px, 1.5vw, 14px); }
 .input, .select, .textarea, .btn{ height: var(--ctrl-h); }
 .layout{ grid-template-columns: var(--side-w) 1fr; }
@@ -2176,10 +2181,14 @@ const old = th.querySelector('.filter-drop'); if(old) old.remove();
           window.addEventListener('scroll', onScroll, true);
           window.addEventListener('resize', onScroll);
           const t = (c.type||'text');
-          function closeOnOutside(e){
-            try{ if(!drop.contains(e.target) && e.target!==fbtn){ cleanup(); } }catch{ cleanup(); }
+          function closeOnOutside(e) {
+
+  const isEditable = (el)=> el && (el.closest && el.closest('input, textarea, select, [contenteditable="true"]'));
+  if (isEditable(e.target)) return;
+try{ if(!drop.contains(e.target) && e.target!==fbtn){ cleanup();
+}
+ }catch{ cleanup(); }
           }
-          document.addEventListener('pointerdown', closeOnOutside, true);
           document.addEventListener('pointerdown', closeOnOutside, true);
           document.addEventListener('click', closeOnOutside, true);
           const onKey=(e)=>{ if(e.key==='Escape'){ cleanup(); } };
@@ -7537,6 +7546,47 @@ function stripHtmlToText(html){
     return txt;
   }catch{ return String(html||''); }
 }
+</script>
+
+
+<script>
+// Inspector: don't close when interacting with inputs/textareas/selects/contenteditable
+(function(){
+  const insp = document.getElementById('inspector') || document.querySelector('.inspector') || document.getElementById('inspectorPane') || document.querySelector('#inspectorPane');
+  if(!insp) return;
+  function isEditable(el){ return el && (el.closest && el.closest('input, textarea, select, [contenteditable="true"]')); }
+  function onDown(e){
+    if(!insp.classList || !insp.classList.contains('open')) return;
+    if(isEditable(e.target)) return;
+    // Let existing handlers decide; this script only guards editable interactions.
+  }
+  document.addEventListener('mousedown', onDown, true);
+  document.addEventListener('touchstart', onDown, {capture:true, passive:true});
+})();
+</script>
+
+
+<script>
+// Preserve input focus and caret across render() calls
+(function(){
+  if (window.__focusSafeRender || typeof window.render !== 'function') return;
+  window.__focusSafeRender = true;
+  const _render = window.render;
+  window.render = function(){
+    const a = document.activeElement;
+    const isTexty = a && ((/^(INPUT|TEXTAREA)$/).test(a.tagName) || a.isContentEditable);
+    const keepId = isTexty ? (a.id || '') : '';
+    const selStart = isTexty && typeof a.selectionStart==='number' ? a.selectionStart : null;
+    const selEnd   = isTexty && typeof a.selectionEnd==='number' ? a.selectionEnd   : null;
+    _render.apply(this, arguments);
+    if (keepId){
+      const next = document.getElementById(keepId);
+      if (next){
+        try { next.focus(); if(selStart!=null && selEnd!=null) next.setSelectionRange(selStart, selEnd); } catch(e){}
+      }
+    }
+  };
+})();
 </script>
 
 </body>
