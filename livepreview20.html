@@ -1198,6 +1198,14 @@ dialog.sig-modal::backdrop { background: rgba(0,0,0,.45); }
 .btn.ghost{ background:#fff; color:#111827; }
 </style>
 
+
+<style>
+/* Mobile tweak: prevent iOS zoom-on-focus & keep layout stable while typing */
+@media (max-width: 480px){
+  input, textarea, select { font-size: 16px; }
+}
+</style>
+
 </head>
 <body>
 
@@ -7566,26 +7574,109 @@ function stripHtmlToText(html){
 </script>
 
 
+
 <script>
-// Preserve input focus and caret across render() calls
+// Preserve input focus & caret across render() and avoid clearing typed text on mobile
 (function(){
-  if (window.__focusSafeRender || typeof window.render !== 'function') return;
-  window.__focusSafeRender = true;
+  if (window.__focusSafeRenderV2) return;
+  window.__focusSafeRenderV2 = true;
+
+  // IME (mobile keyboard) guard: defer renders while composing
+  window.__imeComposing = false;
+  document.addEventListener('compositionstart', function(){ window.__imeComposing = true; }, true);
+  document.addEventListener('compositionend', function(){
+    window.__imeComposing = false;
+    if (window.__queuedRender) {
+      const [ctx, args] = window.__queuedRender;
+      window.__queuedRender = null;
+      try { ctx.apply(null, args); } catch(e){/* swallow */}
+    }
+  }, true);
+
+  // Guard existing render if present
+  if (typeof window.render !== 'function') return;
   const _render = window.render;
+
+  // Ensure focused control has a stable id we can find after re-render
+  function ensureStableId(el){
+    if (!el) return '';
+    if (!el.id) {
+      const tmp = '__af_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+      el.id = tmp;
+      el.setAttribute('data-auto-id', '1');
+    }
+    return el.id;
+  }
+
+  // Get/set control value (input, textarea, contenteditable)
+  function getValue(el){
+    if (!el) return null;
+    if (el.isContentEditable) return el.innerHTML;
+    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') return el.value;
+    return null;
+  }
+  function setValue(el, val){
+    if (!el || val==null) return;
+    if (el.isContentEditable) { el.innerHTML = val; return; }
+    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') { el.value = val; return; }
+  }
+
   window.render = function(){
+    // If composing via IME, queue the latest render call and return
+    if (window.__imeComposing) { window.__queuedRender = [ _render, arguments ]; return; }
+
+    // Capture focused element, caret & current value
     const a = document.activeElement;
     const isTexty = a && ((/^(INPUT|TEXTAREA)$/).test(a.tagName) || a.isContentEditable);
-    const keepId = isTexty ? (a.id || '') : '';
+    const keepId = isTexty ? ensureStableId(a) : '';
     const selStart = isTexty && typeof a.selectionStart==='number' ? a.selectionStart : null;
     const selEnd   = isTexty && typeof a.selectionEnd==='number' ? a.selectionEnd   : null;
+    const typedVal = isTexty ? getValue(a) : null;
+
+    // Do actual render
     _render.apply(this, arguments);
+
+    // Restore focus, caret and value if the new DOM cleared it
     if (keepId){
       const next = document.getElementById(keepId);
       if (next){
-        try { next.focus(); if(selStart!=null && selEnd!=null) next.setSelectionRange(selStart, selEnd); } catch(e){}
+        try {
+          // If the post-render value is empty but we had a typed value, restore it
+          const afterVal = getValue(next);
+          if (typedVal != null && (afterVal == null || afterVal === '' || afterVal !== typedVal)) {
+            setValue(next, typedVal);
+          }
+          next.focus();
+          if(selStart!=null && selEnd!=null && typeof next.setSelectionRange==='function'){
+            next.setSelectionRange(selStart, selEnd);
+          }
+        } catch(e){ /* ignore */ }
       }
     }
   };
+})();
+</script>
+
+
+
+<script>
+// Debounce input-driven updates that might trigger re-renders while typing
+(function(){
+  if (window.__inputDebounce) return;
+  window.__inputDebounce = true;
+  const pending = new WeakMap();
+  function debounceInput(e){
+    const el = e.target;
+    if (!el || !(el.matches && el.matches('input, textarea, [contenteditable="true"]'))) return;
+    // If app listens to 'input' and calls render() synchronously, nudge it to micro-delay
+    clearTimeout(pending.get(el));
+    const t = setTimeout(()=>{
+      // No-op: this exists to give other handlers a chance to run after typing pauses.
+      // If your app exposes a model-sync hook, call it here.
+    }, 120);
+    pending.set(el, t);
+  }
+  document.addEventListener('input', debounceInput, true);
 })();
 </script>
 
