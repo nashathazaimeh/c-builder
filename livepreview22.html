@@ -1699,7 +1699,26 @@ host.innerHTML=''; if(!item) return;
   form.appendChild(renderSection(item.root));
   host.appendChild(form);
 
-  try{ attachValidationUX(form); }catch(_){}
+  
+  // Rehydrate values after rebuild using the snapshot
+  ;(function(){
+    try{
+      const cache = window.__renderFormCache;
+      if(!cache) return;
+      form.querySelectorAll('input, textarea, [contenteditable="true"]').forEach(el=>{
+        const id  = el.id || '';
+        const nm  = (el.getAttribute && el.getAttribute('name')) || '';
+        let v = null;
+        if(id && Object.prototype.hasOwnProperty.call(cache.byId,id)) v = cache.byId[id];
+        else if(nm && Object.prototype.hasOwnProperty.call(cache.byName,nm)) v = cache.byName[nm];
+        if(v!=null && v!==''){
+          if(el.isContentEditable){ if(el.innerHTML!==v) el.innerHTML=v; }
+          else if(el.tagName==='INPUT' || el.tagName==='TEXTAREA'){ if(el.value!==v) el.value=v; }
+        }
+      });
+    }catch(_){}
+  })();
+try{ attachValidationUX(form); }catch(_){}
 }
 
 function renderSection(sec){
