@@ -1376,7 +1376,12 @@ function applyMode(){
 modeEditBtn.onclick=()=>{ demoMode=false; applyMode(); };
 modeDemoBtn.onclick=()=>{ demoMode=true; applyMode(); };
 document.addEventListener('keydown',e=>{ if(e.shiftKey && e.key.toLowerCase()==='d'){ demoMode=!demoMode; applyMode(); }});
-(function(){ demoMode = localStorage.getItem('hrsuite_demo')==='1'; applyMode(); })();
+(function(){
+  // Force EDIT mode on reload
+  demoMode = false;
+  try { localStorage.setItem('hrsuite_demo','0'); } catch(_){}
+  applyMode();
+})();
 
 /* ================= HELPERS ================= */
 const $=(s,d=document)=>d.querySelector(s), $$=(s,d=document)=>Array.from(d.querySelectorAll(s));
@@ -1489,17 +1494,10 @@ function findNavNode(place,id){
   return hit;
 }
 function roots(place){
-  const items = (window.Model && Array.isArray(window.Model.items)) ? window.Model.items : [];
-  const ids = new Set(items.filter(i=>i.place===place).map(i=>i.id));
-  items.filter(i=>i.place===place).forEach(n=>{
-    if (typeof window.findParentOf==='function') {
-      const p = findParentOf(n.id, place);
-      if (p) ids.delete(n.id);
-    }
-  });
-  return items.filter(i=>i.place===place && ids.has(i.id));
+  const ids=new Set(Model.items.filter(i=>i.place===place).map(i=>i.id));
+  Model.items.filter(i=>i.place===place).forEach(n=>{ const p=findParentOf(n.id,place); if(p) ids.delete(n.id); });
+  return Model.items.filter(i=>i.place===place && ids.has(i.id));
 }
-
 
 /* ================= HORIZONTAL RIBBON + FLYOUT ================= */
 const hRibbon=$('#hRibbon'), hPrev=$('#hPrev'), hNext=$('#hNext');
@@ -3493,7 +3491,13 @@ function deleteNode(id){
   return confirmDialog({title:'Delete item?', name:hitName, showName:true, body:'This action cannot be undone.', confirmText:'Delete', cancelText:'Cancel', tone:'danger', icon:'🗑️'}).then(ok=>{ if(!ok) return;
   hit.parent.children = hit.parent.children.filter(c=>c.id!==id); render(); closeInspector(); });
 }
-function closeInspector(){ insp.classList.remove('open'); }
+function closeInspector(){
+  // TDZ-safe + null-safe: resolve inspector lazily each time
+  const el = document.getElementById('inspector') || document.querySelector('.inspector');
+  if(el && el.classList && typeof el.classList.remove === 'function'){
+    try{ el.classList.remove('open'); }catch(_){}
+  }
+}
 
 /* ================= Visibility engine ================= */
 function getFieldValueById(fid){
@@ -6484,17 +6488,14 @@ sheet.appendChild(toggle);const f = document.createElement('div'); f.style.paddi
   function wantNames(){ return ['home','forms','reports','settings','dashboard']; }
 
   function roots(place){
-    const items = (typeof allItems==='function') ? allItems() : ((window.Model && Array.isArray(window.Model.items)) ? window.Model.items : []);
+    if(typeof window.roots==='function') return window.roots(place) || [];
+    const items = allItems();
     const ids = new Set(items.filter(i=>i.place===place).map(i=>i.id));
     items.filter(i=>i.place===place).forEach(n=>{
-      if (typeof window.findParentOf==='function') {
-        const p = findParentOf(n.id, place);
-        if (p) ids.delete(n.id);
-      }
+      if(typeof window.findParentOf==='function'){ const p=findParentOf(n.id, place); if(p) ids.delete(n.id); }
     });
     return items.filter(i=>i.place===place && ids.has(i.id));
   }
-
 
   function getPinnedIds(){
     try{ const arr = JSON.parse(localStorage.getItem('pinnedIds')||'[]'); return Array.isArray(arr)?arr:[]; }catch(e){ return []; }
