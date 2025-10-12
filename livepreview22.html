@@ -7745,6 +7745,63 @@ function stripHtmlToText(html){
 })();
 </script>
 
+
+<script>
+// buildControl wrapper: ensure text inputs keep their value in the model (fd.default)
+(function(){
+  if (window.__bcSyncWrapped) return;
+  window.__bcSyncWrapped = true;
+
+  var __orig_buildControl = window.buildControl;
+  if (typeof __orig_buildControl !== 'function') return;
+
+  function isTextLikeType(t){
+    t = String(t||'').toLowerCase();
+    return ['text','email','url','tel','password','search','number'].includes(t);
+  }
+
+  function attachSync(el, fd){
+    try{
+      if(!el) return;
+      var node = (el.matches && el.matches('input, textarea, [contenteditable="true"]')) ? el : el.querySelector && el.querySelector('input, textarea, [contenteditable="true"]');
+      if(!node) return;
+
+      var isCE = !!node.isContentEditable;
+      var tag = node.tagName || '';
+      var type = (tag === 'INPUT') ? (node.type||'text').toLowerCase() : (isCE ? 'contenteditable' : (tag === 'TEXTAREA' ? 'textarea' : ''));
+
+      // Only sync plain text-like inputs and textareas (skip date/color/range)
+      if (tag === 'INPUT' && !isTextLikeType(type)) return;
+
+      // Seed from model/default when available
+      if (fd && typeof fd === 'object'){
+        var seed = (fd.default != null) ? fd.default : null;
+        if (seed != null && seed !== ''){
+          if (isCE) { if (node.innerHTML !== seed) node.innerHTML = seed; }
+          else { if (node.value !== seed) node.value = seed; }
+        }
+      }
+
+      function push(){
+        try{
+          if (!fd || typeof fd !== 'object') return;
+          var v = isCE ? node.innerHTML : node.value;
+          fd.default = v; // keep simple text values in default so rebuilds persist them
+        }catch(e){}
+      }
+      node.addEventListener('input', push, true);
+      node.addEventListener('blur', push, true);
+    }catch(e){}
+  }
+
+  window.buildControl = function(fd){
+    var el = __orig_buildControl.call(this, fd);
+    try{ attachSync(el, fd); }catch(e){}
+    return el;
+  };
+})();
+</script>
+
 </body>
 </html>
 <style>
