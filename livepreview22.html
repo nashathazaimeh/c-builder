@@ -1664,7 +1664,15 @@ function postRenderFocus(){
   }catch{}
 }
 function renderForm(){
-  const item=getItem(); const host=$('#formHost'); host.innerHTML=''; if(!item) return;
+  const item=getItem(); const host=$('#formHost'); // Focus guard: if user is typing, skip rebuilding the form; do light updates only
+  const __af=document.activeElement;
+  if(__af && ((/^(INPUT|TEXTAREA)$/).test(__af.tagName) || __af.isContentEditable)){
+    try{ typeof setActive==='function' && setActive(); }catch(_){}
+    try{ typeof checkRibbonOverflow==='function' && checkRibbonOverflow(); }catch(_){}
+    try{ typeof updateVisibility==='function' && updateVisibility(); }catch(_){}
+    return;
+  }
+host.innerHTML=''; if(!item) return;
   // Build a real <form> so HTML5 validations (required, pattern, min/max) work on submit
   const form=document.createElement('form'); form.id='designerForm'; form.className='designer-form';
   // Submit: first run native constraint validation, then existing custom doSubmit (table, etc.)
