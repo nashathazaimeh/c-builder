@@ -597,12 +597,6 @@ window.renderDebounced = window.renderDebounced || function(){ try{ if (typeof r
   .row-actions{ display:flex; gap:6px; margin:6px 0; }
   .csv-tools{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:6px 0; }
 
-/*__PAGINATION_CSS__*/
-.tbl-pager{ display:flex; align-items:center; gap:8px; justify-content:flex-start; }
-.tbl-pager .btn{ padding:4px 8px; }
-.tbl-pager .pager-info{ font-size:12px; opacity:.75; }
-
-
 
 
   .tbl th.sortable{ cursor:pointer; user-select:none; }
@@ -1243,158 +1237,7 @@ html.typing input, html.typing textarea, html.typing [contenteditable="true"] { 
         <div class="adder-pop" id="hAdder">
           <button type="button" aria-haspopup="true" aria-expanded="false">＋ Add</button>
           <div class="panel">
-            <header>
-<script>
-/* ---- One-time storage migration & hardening (APP_VER 25.10.12) ---- */
-(function () {
-  const APP_VER = '25.10.12';
-  const VER_KEY = 'hrsuite_store_ver';
-  const DRAFT_KEY = 'fabAddDraft';
-
-  // Safe helpers (no-throw)
-  const safeParse = (s) => { try { return JSON.parse(s); } catch { return null; } };
-  const rm = (k) => { try { localStorage.removeItem(k); } catch {} };
-  const set = (k,v) => { try { localStorage.setItem(k, v); } catch {} };
-  const setJson = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
-  const get = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
-
-  // Defer early mode/app calls until DOM ready (prevents TDZ with inspector/etc)
-  (function(){
-    const SHIM = function(...a){ (SHIM.q||(SHIM.q=[])).push(a); };
-    if (!window.applyMode) window.applyMode = SHIM;
-    document.addEventListener('DOMContentLoaded', () => {
-      const real = window.applyMode;
-      if (real && real !== SHIM && SHIM.q) { SHIM.q.forEach(args => real(...args)); SHIM.q.length = 0; }
-    });
-  })();
-
-  // Inspector guard (avoid 'insp' before initialization)
-  ;(function(){
-    let __inspEl = null;
-    function getInspector(){ return __inspEl || (__inspEl = document.getElementById('insp') || document.querySelector('.inspector, [data-role="inspector"]')); }
-    function closeInspector(){ const el = getInspector(); if (!el) return; el.hidden = true; el.classList && el.classList.add('hidden'); }
-    if (!window.getInspector) window.getInspector = getInspector;
-    if (!window.closeInspector) window.closeInspector = closeInspector;
-  })();
-
-  // Run storage migration once per APP_VER
-  const current = get(VER_KEY);
-  if (current !== APP_VER) {
-    // 1) Unify demo flag
-    try {
-      const legacy = get('demo_mode');
-      if (legacy != null && get('hrsuite_demo') == null) set('hrsuite_demo', legacy === '1' ? '1' : '0');
-      rm('demo_mode');
-    } catch { }
-
-    // 2) Validate pinnedIds
-    (function(){
-      const v = safeParse(get('pinnedIds'));
-      if (!Array.isArray(v)) rm('pinnedIds');
-    })();
-
-    // 3) Validate/Invalidate drafts (fabAddDraft) — require shape + version
-    (function(){
-      const d = safeParse(get(DRAFT_KEY));
-      const ok = d && (d.place === 'h' || d.place === 'v') && typeof d.name === 'string' && d.__ver === APP_VER;
-      if (!ok) rm(DRAFT_KEY);
-    })();
-
-    // 4) Sanitize brand fields
-    (function(){
-      const name = get('site_name'); if (name && typeof name !== 'string') rm('site_name');
-      const logo = get('site_logo_html'); if (logo && typeof logo !== 'string') rm('site_logo_html');
-    })();
-
-    // 5) Optional: drop obviously corrupt JSON blobs saved by older builds
-    (function(){
-      const maybeJsonKeys = ['app_state','form_state','nav_state'];
-      maybeJsonKeys.forEach(k => { const v = get(k); if (v) { const p = safeParse(v); if (v && !p) rm(k); } });
-    })();
-
-    set(VER_KEY, APP_VER);
-  }
-
-  // Minimal initial state seed for tabs to avoid 'items' of undefined
-  if (!window.initialState) window.initialState = {
-    tabs: { items: [] }
-  };
-
-  // Hotkey: Shift+Alt+R to clear app keys
-  document.addEventListener('keydown', (e)=>{
-    if(e.shiftKey && e.altKey && (e.key||'').toLowerCase()==='r'){
-      ['pinnedIds','fabAddDraft','site_name','site_logo_html','hrsuite_demo','hrsuite_store_ver','app_state','form_state','nav_state']
-        .forEach(k=>{ try{ localStorage.removeItem(k); }catch{} });
-      location.reload();
-    }
-  });
-})();
-</script>
-<script>
-(function(){
-  // unify legacy 'demo_mode' -> 'hrsuite_demo'
-  try{
-    const v = localStorage.getItem('demo_mode');
-    if (v != null && localStorage.getItem('hrsuite_demo') == null){
-      localStorage.setItem('hrsuite_demo', v === '1' ? '1' : '0');
-    }
-    localStorage.removeItem('demo_mode');
-  }catch(e){}
-})();
-</script>
-
-
-<script>
-/* ---- One-time storage migration & hardening ---- */
-(function () {
-  const APP_VER = '24.10.12';                 // bump when storage shape changes
-  const VER_KEY = 'hrsuite_store_ver';
-  const DRAFT_KEY = 'fabAddDraft';
-
-  // Helpers
-  const safeParse = (s) => { try { return JSON.parse(s); } catch { return null; } };
-  const rm = (k) => { try { localStorage.removeItem(k); } catch {} };
-  const set = (k,v) => { try { localStorage.setItem(k,v); } catch {} };
-
-  if (localStorage.getItem(VER_KEY) !== APP_VER) {
-    // 1) Unify demo flag (migrate legacy -> new)
-    try {
-      const legacy = localStorage.getItem('demo_mode');
-      if (legacy != null && localStorage.getItem('hrsuite_demo') == null) {
-        set('hrsuite_demo', legacy === '1' ? '1' : '0');
-      }
-      rm('demo_mode');
-    } catch {}
-
-    // 2) Validate pinnedIds (must be array of strings); otherwise drop
-    (function(){
-      const raw = localStorage.getItem('pinnedIds');
-      const v = safeParse(raw);
-      if (!Array.isArray(v)) rm('pinnedIds');
-    })();
-
-    // 3) Invalidate old Add-Nav drafts (schema can change across builds)
-    (function(){
-      const d = safeParse(localStorage.getItem(DRAFT_KEY));
-      // If draft is missing a place/name shape, or from another version, drop it
-      const ok = d && (d.place === 'h' || d.place === 'v') && typeof d.name === 'string' && d.__ver === APP_VER;
-      if (!ok) rm(DRAFT_KEY);
-    })();
-
-    // 4) Sanitize brand fields (must be strings; logo may be SVG/HTML)
-    (function(){
-      const name = localStorage.getItem('site_name');
-      if (name && typeof name !== 'string') rm('site_name');
-      const logo = localStorage.getItem('site_logo_html');
-      if (logo && typeof logo !== 'string') rm('site_logo_html');
-    })();
-
-    set(VER_KEY, APP_VER);
-  }
-})();
-</script>
-
-New horizontal item<button id="pageEditBtn" class="btn ghost page-edit-btn" title="Edit page title" aria-label="Edit page title">✎ Edit</button></header>
+            <header>New horizontal item<button id="pageEditBtn" class="btn ghost page-edit-btn" title="Edit page title" aria-label="Edit page title">✎ Edit</button></header>
             <div class="row">
               <input id="navNameH" class="input" placeholder="Item name…" style="flex:1" />
               <input id="iconPreviewH" class="input" placeholder="Icon (emoji or text)" style="width:160px" />
@@ -1646,10 +1489,17 @@ function findNavNode(place,id){
   return hit;
 }
 function roots(place){
-  const ids=new Set(Model.items.filter(i=>i.place===place).map(i=>i.id));
-  Model.items.filter(i=>i.place===place).forEach(n=>{ const p=findParentOf(n.id,place); if(p) ids.delete(n.id); });
-  return Model.items.filter(i=>i.place===place && ids.has(i.id));
+  const items = (window.Model && Array.isArray(window.Model.items)) ? window.Model.items : [];
+  const ids = new Set(items.filter(i=>i.place===place).map(i=>i.id));
+  items.filter(i=>i.place===place).forEach(n=>{
+    if (typeof window.findParentOf==='function') {
+      const p = findParentOf(n.id, place);
+      if (p) ids.delete(n.id);
+    }
+  });
+  return items.filter(i=>i.place===place && ids.has(i.id));
 }
+
 
 /* ================= HORIZONTAL RIBBON + FLYOUT ================= */
 const hRibbon=$('#hRibbon'), hPrev=$('#hPrev'), hNext=$('#hNext');
@@ -2322,16 +2172,6 @@ if(t==='rating'){
     const stickyFooter=document.createElement('div'); stickyFooter.className='tbl-sticky-footer'; stickyFooter.style.display = (fd.showFooter===false ? 'none' : 'grid');
 
     const thead=document.createElement('thead'); const hr=document.createElement('tr');
-/*__PAGER_UI__*/
-const pager=document.createElement('div'); pager.className='tbl-pager';
-pager.style.display='none';
-pager.style.alignItems='center'; pager.style.gap='8px'; pager.style.margin='6px 0';
-const btnPrev=document.createElement('button'); btnPrev.className='btn ghost'; btnPrev.textContent='‹ Prev';
-const pageInfo=document.createElement('span'); pageInfo.className='pager-info';
-const btnNext=document.createElement('button'); btnNext.className='btn ghost'; btnNext.textContent='Next ›';
-const sizeSel=document.createElement('select'); sizeSel.className='select';
-[10,20,50,100].forEach(n=>{ const o=document.createElement('option'); o.value=String(n); o.textContent=String(n)+' / page'; sizeSel.appendChild(o); });
-pager.append(btnPrev, pageInfo, btnNext, sizeSel);
 
     function colVisible(c){ try{ return !(c.logic && Array.isArray(c.logic.conditions) && c.logic.conditions.length) || passesLogic({logic:c.logic}); }catch{ return true; } }
 
@@ -2682,139 +2522,11 @@ if(Array.isArray(v)) return v.map(x=>String(x).toLowerCase());
       }
       return fd.rows||[];
     }
-    /*__PAGINATION_HELPERS__*/
-fd.pagination = fd.pagination || { enabled:false, mode:'client', pageSize:10, server:{ url:'', method:'GET', pageParam:'page', sizeParam:'pageSize', itemsField:'items', totalField:'total' } };
-
-function getByPath(obj, path){
-  try{
-    if(!path || typeof path!=='string') return undefined;
-    return path.split('.').reduce((o,k)=> (o==null? undefined : o[k]), obj);
-  }catch(e){ return undefined; }
-}
-function resetPaging(){
-  if(fd.pagination && fd.pagination.enabled){
-    const size = Math.max(1, Number(fd.pagination.pageSize)||10);
-    if(fd.pagination.mode==='server'){
-      fd._page = { page:1, pageSize:size, total:0, totalPages:1, items: [] };
-    }else{
-      fd._page = { page:1, pageSize:size, total:0, totalPages:1 };
-    }
-  }else{
-    fd._inf = { limit:30, step:30 };
-  }
-}
-function applyPaginationAndInfiniteScroll(rows){
-  if(fd.pagination && fd.pagination.enabled){
-    const size = Math.max(1, Number(fd.pagination.pageSize)||10);
-    if((fd.pagination.mode||'client')==='client'){
-      const total = rows.length;
-      const totalPages = Math.max(1, Math.ceil(total/size));
-      const page = Math.max(1, Math.min((fd._page && fd._page.page) || 1, totalPages));
-      fd._page = { page, pageSize:size, total, totalPages };
-      const start=(page-1)*size;
-      return rows.slice(start, start+size);
-    }else{ // server
-      const items = (fd._page && Array.isArray(fd._page.items)) ? fd._page.items : [];
-      return items;
-    }
-  }else{
-    fd._inf = fd._inf || { limit:30, step:30 };
-    return rows.slice(0, fd._inf.limit);
-  }
-}
-function renderPager(){
-  const enabled = !!(fd.pagination && fd.pagination.enabled);
-  pager.style.display = enabled ? 'flex' : 'none';
-  if(!enabled) return;
-  try{ sizeSel.value = String(fd.pagination.pageSize||10); }catch(e){}
-  const p = fd._page || {page:1,totalPages:1,total:0};
-  pageInfo.textContent = `Page ${p.page} of ${p.totalPages}` + (p.total? ` • ${p.total} rows` : '');
-  btnPrev.disabled = (p.page<=1);
-  btnNext.disabled = (p.page>=p.totalPages);
-}
-async function loadServerPage(page){
-  const cfg=fd.pagination.server||{};
-  const size = Math.max(1, Number(fd.pagination.pageSize)||10);
-  const method = (cfg.method||'GET').toUpperCase();
-  if(!cfg.url){
-    fd._page = { page:1, pageSize:size, total:0, totalPages:1, items: [] };
-    paintBody(); paintFooter(); renderPager();
-    return;
-  }
-  let url = cfg.url;
-  const qs = new URLSearchParams({ [(cfg.pageParam||'page')]: String(page), [(cfg.sizeParam||'pageSize')]: String(size) });
-  if(fd.sort && fd.sort.key){ qs.set('sort', fd.sort.key); qs.set('dir', fd.sort.dir||'asc'); }
-  if(fd.filters && Object.keys(fd.filters).length){ try{ qs.set('filters', encodeURIComponent(JSON.stringify(fd.filters))); }catch(e){} }
-  let fetchUrl=url, fetchOpts={ method, headers:{ 'Accept':'application/json' } };
-  if(method==='GET'){ fetchUrl += (url.includes('?')?'&':'?') + qs.toString(); }
-  else { fetchOpts.headers['Content-Type']='application/json'; fetchOpts.body = JSON.stringify(Object.fromEntries(qs.entries())); }
-  try{
-    const res=await fetch(fetchUrl, fetchOpts);
-    const data=await res.json();
-    const items = getByPath(data, cfg.itemsField||'items') || [];
-    const total = Number(getByPath(data, cfg.totalField||'total') || items.length);
-    const totalPages = Math.max(1, Math.ceil(total/size));
-    fd._page = { page, pageSize:size, total, totalPages, items };
-  }catch(e){
-    fd._page = { page:1, pageSize:size, total:0, totalPages:1, items: [] };
-  }
-  paintBody(); paintFooter(); renderPager();
-}
-btnPrev.onclick = ()=>{
-  if(!(fd.pagination && fd.pagination.enabled)) return;
-  if((fd.pagination.mode||'client')==='server'){
-    const cur = (fd._page && fd._page.page) || 1;
-    if(cur>1) loadServerPage(cur-1);
-  }else{
-    if(fd._page && fd._page.page>1){ fd._page.page-=1; paintBody(); paintFooter(); renderPager(); }
-  }
-};
-btnNext.onclick = ()=>{
-  if(!(fd.pagination && fd.pagination.enabled)) return;
-  if((fd.pagination.mode||'client')==='server'){
-    const cur = (fd._page && fd._page.page) || 1;
-    const tp = (fd._page && fd._page.totalPages) || 1;
-    if(cur<tp) loadServerPage(cur+1);
-  }else{
-    const p = fd._page || {page:1,totalPages:1};
-    if(p.page < p.totalPages){ p.page+=1; paintBody(); paintFooter(); renderPager(); }
-  }
-};
-sizeSel.onchange = ()=>{
-  const n = Math.max(1, Number(sizeSel.value)||10);
-  if(!fd.pagination) fd.pagination = {};
-  fd.pagination.pageSize = n;
-  resetPaging();
-  if(fd.pagination.enabled && (fd.pagination.mode||'client')==='server'){ loadServerPage(1); }
-  else { paintBody(true); paintFooter(); renderPager(); }
-};
-function paintBody(recalc){
+    function paintBody(){
       tbody.innerHTML='';
-      if(recalc===true){ resetPaging(); }
-      if(!(fd.pagination&&fd.pagination.enabled)){
-        if(!wrap._infBound){
-          wrap._infBound=true;
-          wrap.addEventListener('scroll', ()=>{
-            try{
-              if((wrap.scrollTop + wrap.clientHeight) >= (wrap.scrollHeight - 60)){
-                fd._inf = fd._inf || {limit:30, step:30};
-                const prev=fd._inf.limit; fd._inf.limit = prev + (fd._inf.step||30);
-                paintBody(); paintFooter();
-              }
-            }catch(e){}
-          }, {passive:true});
-        }
-      }
-
       let rows=ensureRowsForPreview(); /*__APPLY_FILTER*/ rows = filterRows(rows);
       if(fd.rows && fd.rows.length && fd.sort){ rows = sortRows(rows); }
-      
-      rows = applyPaginationAndInfiniteScroll(rows);
-      renderPager();
-function ensureBacking(){ if(!(fd.rows&&fd.rows.length)){ fd.rows = rows; } }
-      if(fd.pagination && fd.pagination.enabled && (fd.pagination.mode||'client')==='server' && (!fd._page || !Array.isArray(fd._page.items) || fd._page.items.length===0)){
-        try{ loadServerPage((fd._page&&fd._page.page)||1); }catch(e){}
-      }
+      function ensureBacking(){ if(!(fd.rows&&fd.rows.length)){ fd.rows = rows; } }
       rows.forEach((r,ri)=>{
         const tr=document.createElement('tr');
         (fd.columns||[]).forEach(c=>{
@@ -3024,7 +2736,6 @@ ctrl.id='f_'+fd.id+'_r'+ri+'_'+c.key;
         tfoot.innerHTML='';
         const tr=document.createElement('tr');
         let rows=ensureRowsForPreview(); rows = filterRows(rows);
-        rows = applyPaginationAndInfiniteScroll(rows);
         const visCols = (fd.columns||[]).filter(colVisible);
         function valIsFilled(v){
           if(Array.isArray(v)) return v.some(x=>x!=null && String(x).trim().length>0);
@@ -3118,8 +2829,7 @@ ctrl.id='f_'+fd.id+'_r'+ri+'_'+c.key;
     wrap.appendChild(tools);
     
     wrap.appendChild(stickyFooter);
-    wrap.appendChild(tbl);
-    wrap.appendChild(pager);
+wrap.appendChild(tbl);
     tbl.appendChild(tbody);
     tbl.appendChild(tfoot);
     return wrap;
@@ -3606,26 +3316,7 @@ if(['dropdown','multiselect','radio','checkboxes'].includes(node.ftype)){
         inspBody.append(row('Columns', list));
         inspBody.append(row('Sample rows', rowsNum));
 
-      
-/*__PAGINATION_INSP__*/
-(function(){
-  node.pagination = node.pagination || { enabled:false, mode:'client', pageSize:10, server:{ url:'', method:'GET', pageParam:'page', sizeParam:'pageSize', itemsField:'items', totalField:'total' } };
-  const en = checkbox('Enable pagination', !!node.pagination.enabled, v=>{ node.pagination.enabled=v; render(); openInspector(node.id); });
-  const modeSel = select(['client','server'], node.pagination.mode||'client', v=>{ node.pagination.mode=v; render(); openInspector(node.id); });
-  const size = document.createElement('input'); size.type='number'; size.className='input'; size.min='1'; size.max='500'; size.value=String(node.pagination.pageSize||10); size.oninput=()=>{ node.pagination.pageSize = Math.max(1, Math.min(500, Number(size.value)||10)); };
-  const url = document.createElement('input'); url.type='text'; url.className='input'; url.placeholder='https://api.example.com/data'; url.value=(node.pagination.server&&node.pagination.server.url)||''; url.oninput=()=>{ node.pagination.server = node.pagination.server||{}; node.pagination.server.url=url.value; };
-  const meth = select(['GET','POST'], (node.pagination.server&&node.pagination.server.method)||'GET', v=>{ node.pagination.server=node.pagination.server||{}; node.pagination.server.method=v; });
-  const pParam = document.createElement('input'); pParam.type='text'; pParam.className='input'; pParam.value=(node.pagination.server&&node.pagination.server.pageParam)||'page'; pParam.oninput=()=>{ node.pagination.server=node.pagination.server||{}; node.pagination.server.pageParam=pParam.value; };
-  const sParam = document.createElement('input'); sParam.type='text'; sParam.className='input'; sParam.value=(node.pagination.server&&node.pagination.server.sizeParam)||'pageSize'; sParam.oninput=()=>{ node.pagination.server=node.pagination.server||{}; node.pagination.server.sizeParam=sParam.value; };
-  const itemsField = document.createElement('input'); itemsField.type='text'; itemsField.className='input'; itemsField.placeholder='items'; itemsField.value=(node.pagination.server&&node.pagination.server.itemsField)||'items'; itemsField.oninput=()=>{ node.pagination.server=node.pagination.server||{}; node.pagination.server.itemsField=itemsField.value; };
-  const totalField = document.createElement('input'); totalField.type='text'; totalField.className='input'; totalField.placeholder='total'; totalField.value=(node.pagination.server&&node.pagination.server.totalField)||'total'; totalField.oninput=()=>{ node.pagination.server=node.pagination.server||{}; node.pagination.server.totalField=totalField.value; };
-  inspBody.append(row('Pagination', wrap(en, modeSel, size)));
-  const srvWrap = wrap(url, meth, pParam, sParam, itemsField, totalField);
-  inspBody.append(row('Server settings', srvWrap));
-  function sync(){ srvWrap.style.display = (node.pagination.enabled && node.pagination.mode==='server') ? '' : 'none'; }
-  sync();
-})();
-}
+      }
       inspBody.append(row('Placeholder', input(node.placeholder||'',v=>{node.placeholder=v; render();})));
       inspBody.append(row('Help text', input(node.help||'',v=>{node.help=v; render();})));
       inspBody.append(row('Label position', select(['left','top','hidden'], node.labelPos||'left', v=>{node.labelPos=v; render();})));
@@ -6579,17 +6270,9 @@ hitToCol.node.children = hitToCol.node.children || [];
   })();
 
   function getDraft(){
-  try{ 
-    const obj = JSON.parse(localStorage.getItem('fabAddDraft')||'null'); 
-    return (obj && obj.__ver === '25.10.12') ? obj : null; 
-  }catch(e){ return null; }
-}catch(e){ return null; }
-}catch(e){ return null; }
+    try{ const obj = JSON.parse(localStorage.getItem(DRAFT_KEY)||'null'); return obj && typeof obj==='object' ? obj : null; }catch(e){ return null; }
   }
-  function setDraft(d){
-  try{ localStorage.setItem('fabAddDraft', JSON.stringify({__ver: '25.10.12', ...d})); }catch(e){}
-})); }catch(e){}
-}catch(e){} }
+  function setDraft(d){ try{ localStorage.setItem(DRAFT_KEY, JSON.stringify(d)); }catch(e){} }
   function clearDraft(){ try{ localStorage.removeItem(DRAFT_KEY); }catch(e){} }
 
   function closeSheet(){ sheet.hidden = true; }
@@ -6801,14 +6484,17 @@ sheet.appendChild(toggle);const f = document.createElement('div'); f.style.paddi
   function wantNames(){ return ['home','forms','reports','settings','dashboard']; }
 
   function roots(place){
-    if(typeof window.roots==='function') return window.roots(place) || [];
-    const items = allItems();
+    const items = (typeof allItems==='function') ? allItems() : ((window.Model && Array.isArray(window.Model.items)) ? window.Model.items : []);
     const ids = new Set(items.filter(i=>i.place===place).map(i=>i.id));
     items.filter(i=>i.place===place).forEach(n=>{
-      if(typeof window.findParentOf==='function'){ const p=findParentOf(n.id, place); if(p) ids.delete(n.id); }
+      if (typeof window.findParentOf==='function') {
+        const p = findParentOf(n.id, place);
+        if (p) ids.delete(n.id);
+      }
     });
     return items.filter(i=>i.place===place && ids.has(i.id));
   }
+
 
   function getPinnedIds(){
     try{ const arr = JSON.parse(localStorage.getItem('pinnedIds')||'[]'); return Array.isArray(arr)?arr:[]; }catch(e){ return []; }
@@ -8295,17 +7981,6 @@ function stripHtmlToText(html){
     return el;
   };
 })();
-</script>
-
-
-<script>
-document.addEventListener('keydown', (e)=>{
-  if(e.shiftKey && e.altKey && (e.key||'').toLowerCase()==='r'){
-    ['pinnedIds','fabAddDraft','site_name','site_logo_html','hrsuite_demo','hrsuite_store_ver']
-      .forEach(k=>{ try{ localStorage.removeItem(k); }catch{} });
-    location.reload();
-  }
-});
 </script>
 
 </body>
