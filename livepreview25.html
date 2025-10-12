@@ -1245,6 +1245,106 @@ html.typing input, html.typing textarea, html.typing [contenteditable="true"] { 
           <div class="panel">
             <header>
 <script>
+/* ---- One-time storage migration & hardening (APP_VER 25.10.12) ---- */
+(function () {
+  const APP_VER = '25.10.12';
+  const VER_KEY = 'hrsuite_store_ver';
+  const DRAFT_KEY = 'fabAddDraft';
+
+  // Safe helpers (no-throw)
+  const safeParse = (s) => { try { return JSON.parse(s); } catch { return null; } };
+  const rm = (k) => { try { localStorage.removeItem(k); } catch {} };
+  const set = (k,v) => { try { localStorage.setItem(k, v); } catch {} };
+  const setJson = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+  const get = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
+
+  // Defer early mode/app calls until DOM ready (prevents TDZ with inspector/etc)
+  (function(){
+    const SHIM = function(...a){ (SHIM.q||(SHIM.q=[])).push(a); };
+    if (!window.applyMode) window.applyMode = SHIM;
+    document.addEventListener('DOMContentLoaded', () => {
+      const real = window.applyMode;
+      if (real && real !== SHIM && SHIM.q) { SHIM.q.forEach(args => real(...args)); SHIM.q.length = 0; }
+    });
+  })();
+
+  // Inspector guard (avoid 'insp' before initialization)
+  ;(function(){
+    let __inspEl = null;
+    function getInspector(){ return __inspEl || (__inspEl = document.getElementById('insp') || document.querySelector('.inspector, [data-role="inspector"]')); }
+    function closeInspector(){ const el = getInspector(); if (!el) return; el.hidden = true; el.classList && el.classList.add('hidden'); }
+    if (!window.getInspector) window.getInspector = getInspector;
+    if (!window.closeInspector) window.closeInspector = closeInspector;
+  })();
+
+  // Run storage migration once per APP_VER
+  const current = get(VER_KEY);
+  if (current !== APP_VER) {
+    // 1) Unify demo flag
+    try {
+      const legacy = get('demo_mode');
+      if (legacy != null && get('hrsuite_demo') == null) set('hrsuite_demo', legacy === '1' ? '1' : '0');
+      rm('demo_mode');
+    } catch { }
+
+    // 2) Validate pinnedIds
+    (function(){
+      const v = safeParse(get('pinnedIds'));
+      if (!Array.isArray(v)) rm('pinnedIds');
+    })();
+
+    // 3) Validate/Invalidate drafts (fabAddDraft) — require shape + version
+    (function(){
+      const d = safeParse(get(DRAFT_KEY));
+      const ok = d && (d.place === 'h' || d.place === 'v') && typeof d.name === 'string' && d.__ver === APP_VER;
+      if (!ok) rm(DRAFT_KEY);
+    })();
+
+    // 4) Sanitize brand fields
+    (function(){
+      const name = get('site_name'); if (name && typeof name !== 'string') rm('site_name');
+      const logo = get('site_logo_html'); if (logo && typeof logo !== 'string') rm('site_logo_html');
+    })();
+
+    // 5) Optional: drop obviously corrupt JSON blobs saved by older builds
+    (function(){
+      const maybeJsonKeys = ['app_state','form_state','nav_state'];
+      maybeJsonKeys.forEach(k => { const v = get(k); if (v) { const p = safeParse(v); if (v && !p) rm(k); } });
+    })();
+
+    set(VER_KEY, APP_VER);
+  }
+
+  // Minimal initial state seed for tabs to avoid 'items' of undefined
+  if (!window.initialState) window.initialState = {
+    tabs: { items: [] }
+  };
+
+  // Hotkey: Shift+Alt+R to clear app keys
+  document.addEventListener('keydown', (e)=>{
+    if(e.shiftKey && e.altKey && (e.key||'').toLowerCase()==='r'){
+      ['pinnedIds','fabAddDraft','site_name','site_logo_html','hrsuite_demo','hrsuite_store_ver','app_state','form_state','nav_state']
+        .forEach(k=>{ try{ localStorage.removeItem(k); }catch{} });
+      location.reload();
+    }
+  });
+})();
+</script>
+<script>
+(function(){
+  // unify legacy 'demo_mode' -> 'hrsuite_demo'
+  try{
+    const v = localStorage.getItem('demo_mode');
+    if (v != null && localStorage.getItem('hrsuite_demo') == null){
+      localStorage.setItem('hrsuite_demo', v === '1' ? '1' : '0');
+    }
+    localStorage.removeItem('demo_mode');
+  }catch(e){}
+})();
+</script>
+
+
+<script>
 /* ---- One-time storage migration & hardening ---- */
 (function () {
   const APP_VER = '24.10.12';                 // bump when storage shape changes
@@ -6481,12 +6581,14 @@ hitToCol.node.children = hitToCol.node.children || [];
   function getDraft(){
   try{ 
     const obj = JSON.parse(localStorage.getItem('fabAddDraft')||'null'); 
-    return (obj && obj.__ver === '24.10.12') ? obj : null; 
+    return (obj && obj.__ver === '25.10.12') ? obj : null; 
   }catch(e){ return null; }
+}catch(e){ return null; }
 }catch(e){ return null; }
   }
   function setDraft(d){
-  try{ localStorage.setItem('fabAddDraft', JSON.stringify({__ver: '24.10.12', ...d})); }catch(e){}
+  try{ localStorage.setItem('fabAddDraft', JSON.stringify({__ver: '25.10.12', ...d})); }catch(e){}
+})); }catch(e){}
 }catch(e){} }
   function clearDraft(){ try{ localStorage.removeItem(DRAFT_KEY); }catch(e){} }
 
